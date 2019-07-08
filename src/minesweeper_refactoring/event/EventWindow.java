@@ -16,26 +16,24 @@ public class EventWindow extends WindowAdapter {
 	@Override
 	public void windowClosing(WindowEvent e) {
 		if (exec.getIsGamePlaying()) {
-			int quit = exec.windowClosingOptionDialog();
+			int dialogOption = exec.windowClosingOptionDialog();
 			
-			switch (quit) {
+			switch (dialogOption) {
 				// save
 				case JOptionPane.YES_OPTION:
 					exec.windowEventQuitSave();
-					System.exit(0);
 					break;
 	
 				// dont save
 				case JOptionPane.NO_OPTION:
 					exec.windowEventQuitNoSave();
-					System.exit(0);
 					break;
 	
 				case JOptionPane.CANCEL_OPTION:
-					break;
+					return; //cancel 선택시 System.exit(0)가 실행되지 않도록 처리
 			}
-		} else {
-			System.exit(0);
 		}
+		
+		System.exit(0);
 	}
 }

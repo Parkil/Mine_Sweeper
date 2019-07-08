@@ -32,8 +32,6 @@ public class EventMouse extends MouseAdapter {
 	public void mouseReleased(MouseEvent e) {
 		//플레이 중이 아닐때 
 		if (!exec.getIsGamePlaying()) {
-			System.out.println("playing flag : "+exec.getIsGamePlaying());
-			exec.startTimer();
 			exec.setGamePlaying();
 		}
 		
@@ -42,7 +40,6 @@ public class EventMouse extends MouseAdapter {
 			// Get the button's name
 			JButton button = (JButton) e.getSource();
 
-			// Get coordinates (button.getName().equals("x,y")).
 			String[] co = button.getName().split(","); //이걸 Name으로 x,y좌표를 설정하지 말고 Cell초기화시 JButton을 같이 초기화하고 JButton객체로 Cell객체를 불러와서 Cell안의 표를 가져오게 처리
 
 			int x = Integer.parseInt(co[0]);
@@ -54,7 +51,6 @@ public class EventMouse extends MouseAdapter {
 
 			// Left Click
 			if (SwingUtilities.isLeftMouseButton(e)) {
-				System.out.println("left click 분리 : "+exec.getCellContent(x, y));
 				if (!exec.getCellContent(x, y).equals("F")) { // 깃발설정이 된 곳에서는 클릭이 되지 않도록 처리
 					button.setIcon(null);
 

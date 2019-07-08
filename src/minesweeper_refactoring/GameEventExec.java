@@ -66,11 +66,18 @@ public class GameEventExec {
 	
 	//window closing event 발생
 	public void fireWindowClosingEvent() {
-		gui.dispatchEvent(new WindowEvent(gui, WindowEvent.WINDOW_CLOSING)); // --
+		/*
+		 * dispose와 ui.dispatchEvent(new WindowEvent(ui, WindowEvent.WINDOW_CLOSING));의 차이
+		 * 둘다 해당 window를 closing한다는 점에서는 동일하지만 차이점이 존재한다
+		 * dispose - window closing event를 발생시키지 않고 모든자원을 강제로 OS에 반환한다
+		 * ui.dispatchEvent(new WindowEvent(ui, WindowEvent.WINDOW_CLOSING)) - window closing이벤트를 발생시켜 closing을 수행한다
+		 */
+		gui.dispatchEvent(new WindowEvent(gui, WindowEvent.WINDOW_CLOSING));
 	}
 	
 	//set game playing
 	public void setGamePlaying() {
+		startTimer();
 		playing = true;
 	}
 	
@@ -160,14 +167,12 @@ public class GameEventExec {
 		SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
 			@Override
 			protected Void doInBackground() throws Exception {
-				System.out.println("상태 저장중....");
 				board.saveGame(gui.getTimePassed(), gui.getMines());
 				return null;
 			}
 
 			@Override
 			protected void done() {
-				System.out.println("상태저장 완료");
 				dialog.dispose();
 			}
 		};
