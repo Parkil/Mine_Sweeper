@@ -1,4 +1,4 @@
-package minesweeper;
+package minesweeper_old;
 
 import static java.lang.Math.ceil;
 import java.sql.Connection;

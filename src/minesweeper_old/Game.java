@@ -1,4 +1,4 @@
-package minesweeper;
+package minesweeper_old;
 
 import javax.swing.*;
 import java.awt.*;
@@ -18,8 +18,9 @@ import java.sql.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.util.Pair;
+import minesweeper_old.Score.Time;
+
 import javax.swing.border.TitledBorder;
-import minesweeper.Score.Time;
 
 //지뢰찾기 메인 클래스
 /*

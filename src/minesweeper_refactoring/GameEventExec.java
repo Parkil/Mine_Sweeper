@@ -2,6 +2,7 @@ package minesweeper_refactoring;
 
 import java.awt.event.WindowEvent;
 
+import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.SwingWorker;
 
@@ -117,7 +118,7 @@ public class GameEventExec {
 	}
 	
 	public void fireFindZeros(int x, int y) {
-		game.findZeroes(x, y);
+		gui.findZeroes(x, y);
 	}
 	
 	public void incMines() {
@@ -129,7 +130,7 @@ public class GameEventExec {
 	}
 	
 	public void checkGame() {
-		game.checkGame();
+		//game.checkGame();
 	}
 	
 	public UI getGui() {
@@ -138,6 +139,10 @@ public class GameEventExec {
 	
 	public void startTimer() {
 		gui.startTimer();
+	}
+	
+	public Cell getCellByJButton(JButton btn) {
+		return board.getCellByJButton(btn);
 	}
 	
 	//New Game 선택시 단순 dialog 표시
@@ -167,7 +172,7 @@ public class GameEventExec {
 		SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
 			@Override
 			protected Void doInBackground() throws Exception {
-				board.saveGame(gui.getTimePassed(), gui.getMines());
+				//board.saveGame(gui.getTimePassed(), gui.getMines());
 				return null;
 			}
 

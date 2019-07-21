@@ -3,20 +3,12 @@ package minesweeper_refactoring;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
 import java.io.File;
 import java.net.URISyntaxException;
-import java.security.CodeSource;
 import java.util.ArrayList;
 import javax.swing.border.Border;
 import javax.swing.border.EtchedBorder;
 import java.sql.Date;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javafx.util.Pair;
 import javax.swing.border.TitledBorder;
 import minesweeper_refactoring.Score.Time;
@@ -71,22 +63,24 @@ public class Game {
 		score.populate(); // 기존 게임진행회수 + best클리어 시간 반환
 
 		UI.setLook("Nimbus");
-
+		
+		/*
+		 * JButton에 Cell관련정보를 넣으면서 createBoard에서 처리하는 부분을 UI에서 전부 입력하도록 처리
+		 */
 		createBoard(); // 지뢰찾기 게임정보 생성
 		
 		//swing을 이용하여 GUI설정
-		this.gui = new UI(board.getRows(), board.getCols(), board.getNumberOfMines());
+		this.gui = new UI(9, 9, 10); //나중에 외부설정으로 구현할수 있도록 처리
 		
 		GameEventExec exec = new GameEventExec(board, score, gui, this);
 		
-		//this.gui.setButtonListeners(this); //old
 		this.gui.setButtonListeners(exec); //new
 
 		this.playing = false;
 
 		gui.setVisible(true);
 
-		gui.setIcons();
+		//gui.setIcon();
 		gui.hideAll();
 
 		resumeGame();
@@ -139,7 +133,7 @@ public class Game {
 	// -------------------------------------------------//
 	public void setButtonImages() {
 		Cell cells[][] = board.getCells();
-		JButton buttons[][] = gui.getButtons();
+		JButton buttons[][] = gui.getCellBtnArr();
 
 		for (int y = 0; y < board.getRows(); y++) {
 			for (int x = 0; x < board.getCols(); x++) {
@@ -191,9 +185,8 @@ public class Game {
 
 	public void restartGame() {
 		this.playing = false;
-
-		board.resetBoard();
-
+		
+		gui.resetBtn();
 		gui.interruptTimer();
 		gui.resetTimer();
 		gui.initGame();
@@ -529,7 +522,7 @@ public class Game {
 		String cellSolution;
 
 		Cell cells[][] = board.getCells();
-		JButton buttons[][] = gui.getButtons();
+		JButton buttons[][] = gui.getCellBtnArr();
 
 		for (int x = 0; x < board.getCols(); x++) {
 			for (int y = 0; y < board.getRows(); y++) {
@@ -623,59 +616,4 @@ public class Game {
 	}
 
 	// ----------------------------------------------------------------------/
-
-	/*
-	 * If a player clicks on a zero, all surrounding cells ("neighbours") must
-	 * revealed. This method is recursive: if a neighbour is also a zero, his
-	 * neighbours must also be revealed.
-	 */
-	
-	/*
-	 * 클릭한 셀이 주변에 지뢰가 없는 셀일 경우 주변셀을 전부 개방
-	 */
-	public void findZeroes(int xCo, int yCo) {
-		int neighbours;
-
-		Cell cells[][] = board.getCells();
-		JButton buttons[][] = gui.getButtons();
-		
-		/*
-		 * 1.인자로 주어진 좌표의 주변셀을 전부 검사
-		 * 2.검사하는 대상셀에 숫자가 존재하지 않으면(주변에 지뢰가 없음) 대상셀 좌표를 기준으로 1번을 재귀호출로 다시 수행
-		 * 3.1,2번을 대상셀에 숫자가 존재하지 않을때까지 반복
-		 * 
-		 * -- 좌표를 찍는 대상이 Cell과 JButton으로 이원화되어 있다. 이를 1개로 통합하여 움직여야 할듯
-		 * Cell = JButton인 만큼 Cell안에 JButton을 내부변수로 이용하는 방법이 효율적일듯
-		 */
-		// Columns
-		for (int x = board.makeValidCoordinateX(xCo - 1); x <= board.makeValidCoordinateX(xCo + 1); x++) {
-			// Rows
-			for (int y = board.makeValidCoordinateY(yCo - 1); y <= board.makeValidCoordinateY(yCo + 1); y++) {
-				// Only unrevealed cells need to be revealed.
-				if (cells[x][y].getContent().equals("")) {
-					// Get the neighbours of the current (neighbouring) cell.
-					neighbours = cells[x][y].getSurroundingMines();
-
-					// Reveal the neighbours of the current (neighbouring) cell
-					cells[x][y].setContent(Integer.toString(neighbours));
-
-					if (!cells[x][y].getMine())
-						buttons[x][y].setIcon(null);
-
-					// Is this (neighbouring) cell a "zero" cell itself?
-					if (neighbours == 0) {
-						// Yes, give it a special color and recurse!
-						buttons[x][y].setBackground(Color.lightGray);
-						buttons[x][y].setText("");
-						findZeroes(x, y);
-					} else {
-						// No, give it a boring gray color.
-						buttons[x][y].setBackground(Color.lightGray);
-						buttons[x][y].setText(Integer.toString(neighbours));
-						gui.setTextColor(buttons[x][y]);
-					}
-				}
-			}
-		}
-	}
 }

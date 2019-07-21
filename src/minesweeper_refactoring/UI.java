@@ -2,12 +2,14 @@ package minesweeper_refactoring;
 
 import javax.swing.*;
 import java.awt.*;
+
 import javax.swing.border.Border;
 import javax.swing.border.EtchedBorder;
 
 import minesweeper_refactoring.event.EventMenu;
 import minesweeper_refactoring.event.EventMouse;
 import minesweeper_refactoring.event.EventWindow;
+import minesweeper_refactoring.ui.CellBtn;
 
 public class UI extends JFrame {
 	private static final long serialVersionUID = 1L;
@@ -16,15 +18,15 @@ public class UI extends JFrame {
 	 * 좌표정보가 Board와 UI클래스에서 중복으로 선언되고 처리가 되고 있다 이를 1개로 통합할 필요가 있다.
 	 */
 	// The buttons
-	private JButton[][] buttons; // jbutton의 이중배열이나 Board의 이중배열이나 배열안에 Cell 또는 JButton이 들어있다는것을 제외하고는 동일
+	private CellBtn[][] cellBtnArr; // jbutton의 이중배열이나 Board의 이중배열이나 배열안에 Cell 또는 JButton이 들어있다는것을 제외하고는 동일
 
 	// Number of Buttons in Grid
 	private int rows;
 	private int cols;
+	private int mineCnt;
 
 	// Labels
 	private JLabel minesLabel;
-	private int mines;
 
 	private JLabel timePassedLabel;
 	private Thread timer;
@@ -52,13 +54,14 @@ public class UI extends JFrame {
 	private JMenuItem newGame;
 	private JMenuItem statistics;
 	private JMenuItem exit;
-
-	// ---------------------------------------------------------------//
-	public UI(int r, int c, int m) {
-		this.rows = r;
-		this.cols = c;
-
-		buttons = new JButton[rows][cols];
+	
+	//overloading
+	public UI(int rows, int cols, int mineCnt) {
+		this.rows = rows;
+		this.cols = cols;
+		this.mineCnt = mineCnt;
+		
+		cellBtnArr = new CellBtn[rows][cols];
 
 		// Set frame
 		setSize(FRAME_WIDTH, FRAME_HEIGHT);
@@ -66,32 +69,27 @@ public class UI extends JFrame {
 		setLocation(FRAME_LOC_X, FRAME_LOC_Y);
 
 		// The layout of the frame:
-
 		JPanel gameBoard;
 		JPanel tmPanel;
-		JPanel scorePanel;
 
 		// ----------------GAME BOARD---------------------//
 		// Build the "gameBoard".
 		gameBoard = new JPanel();
 		gameBoard.setLayout(new GridLayout(rows, cols, 0, 0));
-
+		
+		//실제 UI에 표시되는 좌표와 배열좌표를 일치시키기 위하여 y->x순으로 처리
 		for (int y = 0; y < rows; y++) {
 			for (int x = 0; x < cols; x++) {
-				// Set button text.
-				buttons[x][y] = new JButton("");
-
-				// Set button name (x,y).
-				buttons[x][y].setName(Integer.toString(x) + "," + Integer.toString(y));
-				buttons[x][y].setFont(new Font("Serif", Font.BOLD, 24));
-
-				buttons[x][y].setBorder(BorderFactory.createLineBorder(Color.black, 1, true));
-
-				// Add this button to the gameboard.
-				gameBoard.add(buttons[x][y]);
+				cellBtnArr[x][y] = new CellBtn();
+				cellBtnArr[x][y].setName(x+ "," + y);
+				cellBtnArr[x][y].setFont(new Font("Serif", Font.BOLD, 24));
+				cellBtnArr[x][y].setBorder(BorderFactory.createLineBorder(Color.black, 1, true));
+				
+				gameBoard.add(cellBtnArr[x][y]);
 			}
 		}
-		// -----------------------------------------------//
+
+		setBtnCellStatus();
 
 		// -------------TIME AND MINE------------------------//
 
@@ -130,7 +128,7 @@ public class UI extends JFrame {
 		minesLabel.setForeground(Color.white);
 
 		minesLabel.setOpaque(true);
-		setMines(m);
+		setMines(mineCnt);
 
 		JLabel mT = new JLabel("", SwingConstants.CENTER);
 		mT.setIcon(new ImageIcon(getClass().getResource("/resources/mine.png")));
@@ -190,7 +188,118 @@ public class UI extends JFrame {
 		this.setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("/resources/mine.png")));
 
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		
+		setIcon(cellBtnArr[0][0]);
 	}
+	
+	
+	//각 버튼에 대한 상태(지뢰매설 여부, 셀주변 지뢰개수) 설정 
+	private void setBtnCellStatus() {
+		
+		//1.지뢰를 랜덤으로 설정
+		int x, y;
+		int currentMines = 0;
+		
+		while (currentMines != mineCnt) {
+			x = (int) Math.floor(Math.random() * cols);
+			y = (int) Math.floor(Math.random() * rows);
+			
+			//해당셀에 지뢰가 매설되어 있지 않을경우 지뢰를 매설하고 지뢰주변셀의 지뢰개수를 1씩 증가시킴
+			if (!cellBtnArr[x][y].isMineBuried()) {
+				System.out.printf("지뢰가 매설된 위치[%s,%s]\n",x,y);
+				cellBtnArr[x][y].setMineBuried(true);
+				incSurroundMineCnt(x, y);
+				currentMines++;
+			}
+		}
+	}
+	
+	//해당 좌표 주변셀의 지뢰개수 증가
+	private void incSurroundMineCnt(int xCo, int yCo) {
+		for (int x = makeValidCoordinateX(xCo - 1); x <= makeValidCoordinateX(xCo + 1); x++) {
+			for (int y = makeValidCoordinateY(yCo - 1); y <= makeValidCoordinateY(yCo + 1); y++) {
+				if (x != xCo || y != yCo) {
+					int orgCnt = cellBtnArr[x][y].getSurroundingMineCnt();
+					cellBtnArr[x][y].setSurroundingMineCnt(++orgCnt);
+				}
+			}
+		}
+	}
+	
+	//해당 좌표를 중심으로 주변에 지뢰가없는 셀을 전부 검색
+	public void findZeroes(int xCo, int yCo) {
+		int surroundMineCnt;
+
+		for (int x = makeValidCoordinateX(xCo - 1); x <= makeValidCoordinateX(xCo + 1); x++) {
+			for (int y = makeValidCoordinateY(yCo - 1); y <= makeValidCoordinateY(yCo + 1); y++) {
+				System.out.println("findZeros Content : "+cellBtnArr[x][y].getContent());
+				if ("".equals(cellBtnArr[x][y].getContent())) {
+					CellBtn btn = cellBtnArr[x][y];
+					
+					//해당셀에 주변지뢰개수를 반환
+					surroundMineCnt = btn.getSurroundingMineCnt();
+					btn.setContent(Integer.toString(surroundMineCnt));
+					
+					if (!btn.isMineBuried()) {
+						btn.setIcon(null);
+					}
+					
+					if (surroundMineCnt == 0) { //주변에 지뢰가 존재하지 않을경우
+						btn.setBackground(Color.lightGray);
+						btn.setText("");
+						findZeroes(x, y);
+					} else { //주변에 지뢰가 존재할 경우
+						btn.setBackground(Color.lightGray);
+						btn.setText(Integer.toString(surroundMineCnt));
+						setTextColor(btn);
+					}
+				}
+			}
+		}
+	}
+	
+	//주어진 x좌표가 grid에서 유효한 좌표인지 확인
+	private int makeValidCoordinateX(int i) {
+		if (i < 0)
+			i = 0;
+		else if (i > cols - 1)
+			i = cols - 1;
+
+		return i;
+	}
+	
+	//주어진 y좌표가 grid에서 유효한 좌표인지 확인
+	private int makeValidCoordinateY(int i) {
+		if (i < 0)
+			i = 0;
+		else if (i > rows - 1)
+			i = rows - 1;
+
+		return i;
+	}
+	
+	public void resetBtn() {
+		for (int x = 0; x < cols; x++) {
+			for (int y = 0; y < rows; y++) {
+				cellBtnArr[x][y].setContent("");
+			}
+		}
+	}
+	// ------------------------------------------------------------------//
+
+	// ---------------------HELPER FUNCTIONS---------------------------//
+
+	// 지뢰 주변의 숫자생성
+	// 해당 x,y좌표의 근처(자기 주변 8칸)에 지뢰가 있으면 지뢰개수를 현재 칸에 표시
+	/*
+	 * 해당코드에서는 x,y좌표가 유효한지 체크를 했지만, 이게 필요할지는 의문 -> 지정된 범위를 넘어가는곳에 지뢰가 존재할리 없기 때문
+	 * 
+	 * 현재좌표 x,y의 상하좌우 4칸 + 각방향 대각선 4칸
+	 */
+	// Calculates the number of surrounding mines ("neighbours")
+
+	
+	
 
 	// -----------------------------------------------------------------//
 
@@ -255,7 +364,7 @@ public class UI extends JFrame {
 	public void enableAll() {
 		for (int x = 0; x < cols; x++) {
 			for (int y = 0; y < rows; y++) {
-				buttons[x][y].setEnabled(true);
+				cellBtnArr[x][y].setEnabled(true);
 			}
 		}
 	}
@@ -264,44 +373,32 @@ public class UI extends JFrame {
 	public void disableAll() {
 		for (int x = 0; x < cols; x++) {
 			for (int y = 0; y < rows; y++) {
-				buttons[x][y].setEnabled(false);
+				cellBtnArr[x][y].setEnabled(false);
 			}
 		}
 	}
 
 	// Resets the content of all buttons
 	public void hideAll() {
-		for (int x = 0; x < cols; x++) {
-			for (int y = 0; y < rows; y++) {
-				buttons[x][y].setText("");
-				buttons[x][y].setBackground(new Color(0, 103, 200));
-				buttons[x][y].setIcon(tile);
+		for(int x=0 ; x<rows ; x++) {
+			for(int y=0 ; y<cols ; y++) {
+				cellBtnArr[x][y].setText("");
+				cellBtnArr[x][y].setBackground(new Color(0, 103, 200));
+				cellBtnArr[x][y].setIcon(tile);
 			}
 		}
 	}
-
 	// ---------------SET LISTENERS--------------------------//
-	private GameEventExec exec; //
 	
 	public void setButtonListeners(GameEventExec exec) {
-		this.exec = exec;
 		addWindowListener(new EventWindow(exec));
-
-		// Set listeners for all buttons in the grid in gameBoard
-		for (int x = 0; x < cols; x++) {
-			for (int y = 0; y < rows; y++) {
-				buttons[x][y].addMouseListener(new EventMouse(exec));
-				// buttons[x][y].addMouseListener(game); //UI.java에 있는 mouse listener와
-				// Game.java에 있는 mouse listener의 차이는?
+		
+		EventMouse eventMouse = new EventMouse(exec);
+		for(int x=0 ; x<rows ; x++) {
+			for(int y=0 ; y<cols ; y++) {
+				cellBtnArr[x][y].addMouseListener(eventMouse);
 			}
 		}
-		
-		/*
-		// Set listeners for menu items in menu bar
-		newGame.addActionListener(game);
-		statistics.addActionListener(game);
-		exit.addActionListener(game);
-		*/
 		
 		newGame.addActionListener(new EventMenu(exec));
 		statistics.addActionListener(new EventMenu(exec));
@@ -314,8 +411,8 @@ public class UI extends JFrame {
 
 	// -----------------GETTERS AND SETTERS--------------------//
 
-	public JButton[][] getButtons() {
-		return buttons;
+	public CellBtn[][] getCellBtnArr() {
+		return cellBtnArr;
 	}
 
 	public int getTimePassed() {
@@ -341,37 +438,34 @@ public class UI extends JFrame {
 	// -------------------------------------------------------------//
 
 	public void setMines(int m) {
-		mines = m;
+		mineCnt = m;
 		minesLabel.setText("  " + Integer.toString(m) + "  ");
 	}
 
 	public void incMines() {
-		mines++;
-		setMines(mines);
+		mineCnt++;
+		setMines(mineCnt);
 	}
 
 	public void decMines() {
-		mines--;
-		setMines(mines);
+		mineCnt--;
+		setMines(mineCnt);
 	}
 
 	public int getMines() {
-		return mines;
+		return mineCnt;
 	}
 
-	// --------------------Related to Icons----------------------------//
 	private static Icon resizeIcon(ImageIcon icon, int resizedWidth, int resizedHeight) {
 		Image img = icon.getImage();
 		Image resizedImage = img.getScaledInstance(resizedWidth, resizedHeight, java.awt.Image.SCALE_SMOOTH);
 		return new ImageIcon(resizedImage);
 	}
 
-	public void setIcons() {
-		// ---------------------Set Icons-----------------------------//
-
-		int bOffset = buttons[0][1].getInsets().left;
-		int bWidth = buttons[0][1].getWidth();
-		int bHeight = buttons[0][1].getHeight();
+	public void setIcon(JButton btn) {
+		int bOffset = btn.getInsets().left;
+		int bWidth = btn.getWidth();
+		int bHeight = btn.getHeight();
 
 		ImageIcon d;
 
@@ -386,9 +480,6 @@ public class UI extends JFrame {
 
 		d = new ImageIcon(getClass().getResource("/resources/tile.png"));
 		tile = resizeIcon(d, bWidth - bOffset, bHeight - bOffset);
-
-		// -------------------------------------------------------//
-
 	}
 
 	public Icon getIconMine() {

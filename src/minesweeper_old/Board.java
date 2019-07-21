@@ -1,4 +1,4 @@
-package minesweeper;
+package minesweeper_old;
 
 import java.sql.Connection;
 import java.sql.DriverManager;

@@ -3,11 +3,14 @@ package minesweeper_refactoring.event;
 import java.awt.Color;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.Arrays;
 
 import javax.swing.JButton;
 import javax.swing.SwingUtilities;
 
+import minesweeper_refactoring.Cell;
 import minesweeper_refactoring.GameEventExec;
+import minesweeper_refactoring.ui.CellBtn;
 
 public class EventMouse extends MouseAdapter {
 	
@@ -37,21 +40,26 @@ public class EventMouse extends MouseAdapter {
 		
 		//플레이 중
 		if (exec.getIsGamePlaying()) {
-			// Get the button's name
-			JButton button = (JButton) e.getSource();
+			CellBtn button = (CellBtn) e.getSource();
 
-			String[] co = button.getName().split(","); //이걸 Name으로 x,y좌표를 설정하지 말고 Cell초기화시 JButton을 같이 초기화하고 JButton객체로 Cell객체를 불러와서 Cell안의 표를 가져오게 처리
+			String[] coord = button.getName().split(",");
 
-			int x = Integer.parseInt(co[0]);
-			int y = Integer.parseInt(co[1]);
+			int x = Integer.parseInt(coord[0]);
+			int y = Integer.parseInt(coord[1]);
 
 			// Get cell information.
-			boolean isMine = exec.getMineExists(x, y);
-			int neighbours = exec.getSurroundMineCnt(x, y);
-
+			//boolean isMine = exec.getMineExists(x, y);
+			//int surroundMineCnt = exec.getSurroundMineCnt(x, y);
+			
+			boolean isMine = button.isMineBuried();
+			int surroundMineCnt = button.getSurroundingMineCnt();
+			
+			//System.out.println(x+","+y);
+			//System.out.println(surroundMineCnt);
+			
 			// Left Click
 			if (SwingUtilities.isLeftMouseButton(e)) {
-				if (!exec.getCellContent(x, y).equals("F")) { // 깃발설정이 된 곳에서는 클릭이 되지 않도록 처리
+				if (!"F".equals(button.getContent())) { // 깃발설정이 된 곳에서는 클릭이 되지 않도록 처리
 					button.setIcon(null);
 
 					// Mine is clicked.
@@ -59,16 +67,16 @@ public class EventMouse extends MouseAdapter {
 						// red mine
 						button.setIcon(exec.getGui().getIconRedMine());
 						button.setBackground(Color.red);
-						exec.setCellContent(x, y, "M");
+						button.setContent("M");
 						exec.fireGameLost();
 					} else {
-						// The player has clicked on a number.
-						exec.setCellContent(x, y, Integer.toString(neighbours));
-						button.setText(Integer.toString(neighbours));
+						// The player has clicked on a number
+						button.setContent(Integer.toString(surroundMineCnt));
+						//exec.setCellContent(x, y, Integer.toString(surroundMineCnt));
+						button.setText(Integer.toString(surroundMineCnt));
 						exec.getGui().setTextColor(button); 
 
-						if (neighbours == 0) {
-							// Show all surrounding cells.
+						if (surroundMineCnt == 0) {
 							button.setBackground(Color.lightGray);
 							button.setText("");
 							exec.fireFindZeros(x, y);
@@ -80,22 +88,19 @@ public class EventMouse extends MouseAdapter {
 			}
 			// Right Click - node.js포팅시 가장문제가 되는 부분, 우측클릭을 막을수는 있어도 우측클릭에 깃발표시 이벤트를 먹이는게 쉽지 않을듯
 			else if (SwingUtilities.isRightMouseButton(e)) {
-				
-				if (exec.getCellContent(x, y).equals("F")) {
-					exec.setCellContent(x, y, "");
+				if ("F".equals(button.getContent())) {
+					button.setContent("");
 					button.setText("");
 					button.setBackground(new Color(0, 110, 140));
 
-					// simple blue
-
 					button.setIcon(exec.getGui().getIconTile());
-					exec.getGui().incMines(); // --
+					exec.getGui().incMines();
 				} else if (exec.getCellContent(x, y).equals("")) {
-					exec.setCellContent(x, y, "F");
+					button.setContent("F");;
 					button.setBackground(Color.blue);
 
 					button.setIcon(exec.getGui().getIconFlag());
-					exec.getGui().decMines(); //--
+					exec.getGui().decMines();
 				}
 			}
 			
