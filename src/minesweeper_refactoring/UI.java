@@ -14,11 +14,8 @@ import minesweeper_refactoring.ui.CellBtn;
 public class UI extends JFrame {
 	private static final long serialVersionUID = 1L;
 
-	/*
-	 * 좌표정보가 Board와 UI클래스에서 중복으로 선언되고 처리가 되고 있다 이를 1개로 통합할 필요가 있다.
-	 */
 	// The buttons
-	private CellBtn[][] cellBtnArr; // jbutton의 이중배열이나 Board의 이중배열이나 배열안에 Cell 또는 JButton이 들어있다는것을 제외하고는 동일
+	private CellBtn[][] cellBtnArr;
 
 	// Number of Buttons in Grid
 	private int rows;
@@ -77,7 +74,7 @@ public class UI extends JFrame {
 		gameBoard = new JPanel();
 		gameBoard.setLayout(new GridLayout(rows, cols, 0, 0));
 		
-		//실제 UI에 표시되는 좌표와 배열좌표를 일치시키기 위하여 y->x순으로 처리
+		//실제 UI에 표시되는 좌표와 배열좌표를 일치시키기 위하여 x,y와 rows,cols를 역순으로 배치
 		for (int y = 0; y < rows; y++) {
 			for (int x = 0; x < cols; x++) {
 				cellBtnArr[x][y] = new CellBtn();
@@ -206,7 +203,6 @@ public class UI extends JFrame {
 			
 			//해당셀에 지뢰가 매설되어 있지 않을경우 지뢰를 매설하고 지뢰주변셀의 지뢰개수를 1씩 증가시킴
 			if (!cellBtnArr[x][y].isMineBuried()) {
-				System.out.printf("지뢰가 매설된 위치[%s,%s]\n",x,y);
 				cellBtnArr[x][y].setMineBuried(true);
 				incSurroundMineCnt(x, y);
 				currentMines++;
@@ -232,7 +228,6 @@ public class UI extends JFrame {
 
 		for (int x = makeValidCoordinateX(xCo - 1); x <= makeValidCoordinateX(xCo + 1); x++) {
 			for (int y = makeValidCoordinateY(yCo - 1); y <= makeValidCoordinateY(yCo + 1); y++) {
-				System.out.println("findZeros Content : "+cellBtnArr[x][y].getContent());
 				if ("".equals(cellBtnArr[x][y].getContent())) {
 					CellBtn btn = cellBtnArr[x][y];
 					
@@ -278,6 +273,7 @@ public class UI extends JFrame {
 		return i;
 	}
 	
+	//버튼의 상태를 전부 초기화
 	public void resetBtn() {
 		for (int x = 0; x < cols; x++) {
 			for (int y = 0; y < rows; y++) {

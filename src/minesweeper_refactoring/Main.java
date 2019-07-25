@@ -19,6 +19,7 @@ public class Main {
 	 * dialog는 따로 클래스를 빼서 처리
 	 * 
 	 * 사용자 UI가 들어가는 상황에서 JUnit test case를 작성할수 있는지 확인 필요
+	 * 
 	 */
 	public static void main(String[] args) {
 		Game game = new Game();

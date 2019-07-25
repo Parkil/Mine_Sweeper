@@ -1,11 +1,12 @@
 package minesweeper_refactoring;
 
+import java.awt.Color;
 import java.awt.event.WindowEvent;
 
-import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.SwingWorker;
 
+import minesweeper_refactoring.ui.CellBtn;
 import minesweeper_refactoring.ui.UIDialog;
 
 /*
@@ -15,8 +16,6 @@ import minesweeper_refactoring.ui.UIDialog;
 public class GameEventExec {
 	private boolean playing = false;
 
-	private Board board;
-
 	private Score score;
 	
 	private UI gui;
@@ -25,8 +24,7 @@ public class GameEventExec {
 	
 	private UIDialog uiDialog;
 	
-	public GameEventExec(Board board, Score score, UI gui, Game game) {
-		this.board = board;
+	public GameEventExec(Score score, UI gui, Game game) {
 		this.score = score;
 		this.gui = gui;
 		this.game = game;
@@ -78,13 +76,8 @@ public class GameEventExec {
 	
 	//set game playing
 	public void setGamePlaying() {
-		startTimer();
+		gui.startTimer();
 		playing = true;
-	}
-	
-	//set game end
-	public void setGameEnd() {
-		playing = false;
 	}
 	
 	//get current game status
@@ -92,57 +85,64 @@ public class GameEventExec {
 		return playing;
 	}
 	
-	//return mine exists by coordinates 
-	public boolean getMineExists(int x, int y) {
-		return board.getCells()[x][y].getMine();
-	}
-	
-	//return surround mine count by coordinates
-	public int getSurroundMineCnt(int x, int y) {
-		return board.getCells()[x][y].getSurroundingMines();
-	}
-	
-	//get cell contents
-	public String getCellContent(int x, int y) {
-		return board.getCells()[x][y].getContent();
-	}
-	
-	//set cell contents
-	public void setCellContent(int x, int y, String content) {
-		board.getCells()[x][y].setContent(content);
-	}
-	
-	public void fireGameLost() {
-		setGameEnd();
-		game.gameLost();
-	}
-	
-	public void fireFindZeros(int x, int y) {
-		gui.findZeroes(x, y);
-	}
-	
-	public void incMines() {
-		gui.incMines();
-	}
-	
-	public void decMines() {
-		gui.decMines();
-	}
 	
 	public void checkGame() {
 		//game.checkGame();
 	}
 	
-	public UI getGui() {
-		return gui;
+	//왼쪽클릭 처리
+	public void leftClick(CellBtn button) {
+		if (!"F".equals(button.getContent())) {
+			String[] coord = button.getName().split(",");
+
+			int x = Integer.parseInt(coord[0]);
+			int y = Integer.parseInt(coord[1]);
+
+			boolean isMine = button.isMineBuried();
+			int surroundMineCnt = button.getSurroundingMineCnt();
+			
+			button.setIcon(null);
+
+			// Mine is clicked.
+			if (isMine) {
+				// red mine
+				button.setIcon(gui.getIconRedMine());
+				button.setBackground(Color.red);
+				button.setContent("M");
+				playing = false;
+				game.gameLost();
+			} else {
+				button.setContent(Integer.toString(surroundMineCnt));
+				button.setText(Integer.toString(surroundMineCnt));
+				gui.setTextColor(button); 
+
+				if (surroundMineCnt == 0) {
+					button.setBackground(Color.lightGray);
+					button.setText("");
+					gui.findZeroes(x, y);
+				} else {
+					button.setBackground(Color.lightGray);
+				}
+			}
+		}
 	}
 	
-	public void startTimer() {
-		gui.startTimer();
-	}
-	
-	public Cell getCellByJButton(JButton btn) {
-		return board.getCellByJButton(btn);
+	//오른쪽 클릭 처리
+	public void rightClick(CellBtn button) {
+		if ("F".equals(button.getContent())) {
+			button.setContent("");
+			button.setText("");
+			button.setBackground(new Color(0, 110, 140));
+
+			button.setIcon(gui.getIconTile());
+			gui.incMines();
+		} else if ("".equals(button.getContent())) {
+			button.setContent("F");;
+			button.setBackground(Color.blue);
+
+			button.setIcon(gui.getIconFlag());
+			gui.decMines();
+		}
 	}
 	
 	//New Game 선택시 단순 dialog 표시

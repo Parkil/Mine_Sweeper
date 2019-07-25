@@ -6,17 +6,30 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Map;
 
 import javafx.util.Pair;
 import minesweeper_refactoring.Game;
+import minesweeper_refactoring.ui.CellBtn;
 
 public class DBUtil {
-	// to check whether there is a save game or not
-	/*
-	 * MS Access내에 저장되어 있는 테이블의 데이터를 읽어서 기존에 저장된 게임이 존재하는지 확인 Access를 대체하려면 1.파일 기반
-	 * DB가 필요함(== 해당 게임 외부에 DB를 띄워서 통신하는 방식은 안되고 게임내부에서 저장소와 통신을 하는 방법만 가능)
-	 * 2.상용라이센스는 안됨 3.SQL기반으로 데이터를 저장/변경/삭제가 가능해야 함
-	 */
+	Game game;
+	
+	private int rows;
+	private int cols;
+//	private int totMineCnt;
+	private CellBtn[][] cellBtnArr;
+	
+	public DBUtil(Game game) {
+		this.game = game;
+		Map<String,Object> infoMap = game.getGameInfo();
+		
+		rows = ((Integer)infoMap.get("rows")).intValue();
+		cols = ((Integer)infoMap.get("cols")).intValue();
+//		totMineCnt = ((Integer)infoMap.get("totMineCnt")).intValue();
+		cellBtnArr = (CellBtn[][])infoMap.get("cellBtn");
+	}
+	
 	public boolean checkSave() {
 		Connection connection = null;
 		Statement statement = null;
@@ -48,15 +61,8 @@ public class DBUtil {
 			return false;
 		}
 	}
-
-	// --------------LOAD SAVED GAME-----------------//
-
-	/*
-	 * 기존에 저장된 게임 load DB에 저장된 셀정보를 가져와서 저장된 상태로 복원
-	 * 
-	 * 파일기반 DB - Game이 1:1로 통신을 하고 복잡한 SQL이 존재하지 않기 때문에 Connection Pool이나 Mybatis같은
-	 * tool을 사용하는건 적절치 않아 보인다
-	 */
+	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public Pair loadSaveGame() {
 		Connection connection = null;
 		Statement statement = null;
@@ -70,21 +76,19 @@ public class DBUtil {
 			// 저장된 상태반환
 			statement = connection.createStatement();
 			resultSet = statement.executeQuery("SELECT * FROM CELL");
-			
-			/*
+
 			for (int x = 0; x < cols; x++) {
 				for (int y = 0; y < rows; y++) {
 					resultSet.next();
 
-					cells[x][y].setContent(resultSet.getString("CONTENT"));
-					cells[x][y].setMine(resultSet.getBoolean("MINE"));
-					cells[x][y].setSurroundingMines(resultSet.getInt("SURROUNDING_MINES"));
+					cellBtnArr[x][y].setContent(resultSet.getString("CONTENT"));
+					cellBtnArr[x][y].setMineBuried(resultSet.getBoolean("MINE"));
+					cellBtnArr[x][y].setSurroundingMineCnt(resultSet.getInt("SURROUNDING_MINES"));
 				}
 			}
-			*/
+
 			statement.close();
 			resultSet.close();
-			// ----------------------------------------------------//
 
 			// 남아있는 지뢰, timer반환
 			statement = connection.createStatement();
@@ -159,18 +163,16 @@ public class DBUtil {
 			// --------------INSERT DATA INTO CELL TABLE-----------//
 			String template = "INSERT INTO CELL (CONTENT, MINE, SURROUNDING_MINES) values (?,?,?)";
 			statement = connection.prepareStatement(template);
-			
-			/*
+
 			for (int x = 0; x < cols; x++) {
 				for (int y = 0; y < rows; y++) {
-					statement.setString(1, cells[x][y].getContent());
-					statement.setBoolean(2, cells[x][y].getMine());
-					statement.setInt(3, (int) cells[x][y].getSurroundingMines());
+					statement.setString(1, cellBtnArr[x][y].getContent());
+					statement.setBoolean(2, cellBtnArr[x][y].isMineBuried());
+					statement.setInt(3, (int) cellBtnArr[x][y].getSurroundingMineCnt());
 
 					statement.executeUpdate();
 				}
 			}
-			*/
 			// --------------------------------------------------//
 
 			// --------------------SAVE GAME STATE----------------------//
@@ -191,6 +193,5 @@ public class DBUtil {
 		} catch (SQLException sqlex) {
 			sqlex.printStackTrace();
 		}
-
 	}
 }

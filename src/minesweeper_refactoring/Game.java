@@ -6,12 +6,16 @@ import java.awt.event.ActionEvent;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.HashMap;
+
 import javax.swing.border.Border;
 import javax.swing.border.EtchedBorder;
 import java.sql.Date;
 import javafx.util.Pair;
 import javax.swing.border.TitledBorder;
 import minesweeper_refactoring.Score.Time;
+import minesweeper_refactoring.db.DBUtil;
+import minesweeper_refactoring.ui.CellBtn;
 
 //지뢰찾기 메인 클래스
 /*
@@ -32,21 +36,27 @@ public class Game {
 	// "playing" indicates whether a game is running (true) or not (false).
 	public boolean playing;
 
-	public Board board;
+	
+	public DBUtil util;
 
 	public UI gui;
 
 	public Score score;
-
-	// ------------------------------------------------------------------//
 	
-	/*
-	 * 1.access db에서 기존 게임 플레이 정보(게임 실행 회수, best기록)를 가져온다 
-	 * 2.지뢰찾기 각 셀의 정보를 설정
-	 * 3.2번에서 설정한 정보를 기준으로 GUI를 생성
-	 * 
-	 */
+	//가로세로 크기 및 전체 지뢰 개수 초기화된 설정은 기본설정 값
+	private int rows = 9;
+	private int cols = 9;
+	private int totMineCnt = 10;
+
 	public Game() {
+		new Game(rows, cols, totMineCnt);
+	}
+	
+	public Game(int rows, int cols, int totMineCnt) {
+		this.rows = rows;
+		this.cols = cols;
+		this.totMineCnt = totMineCnt;
+		
 		// set db path
 		String p = "";
 
@@ -64,15 +74,10 @@ public class Game {
 
 		UI.setLook("Nimbus");
 		
-		/*
-		 * JButton에 Cell관련정보를 넣으면서 createBoard에서 처리하는 부분을 UI에서 전부 입력하도록 처리
-		 */
-		createBoard(); // 지뢰찾기 게임정보 생성
-		
 		//swing을 이용하여 GUI설정
 		this.gui = new UI(9, 9, 10); //나중에 외부설정으로 구현할수 있도록 처리
 		
-		GameEventExec exec = new GameEventExec(board, score, gui, this);
+		GameEventExec exec = new GameEventExec(score, gui, this);
 		
 		this.gui.setButtonListeners(exec); //new
 
@@ -82,7 +87,9 @@ public class Game {
 
 		//gui.setIcon();
 		gui.hideAll();
-
+		
+		util = new DBUtil(this); //lazy init필요
+		
 		resumeGame();
 	}
 
@@ -92,7 +99,7 @@ public class Game {
 	 * 기존에 저장된 게임이 존재할 경우 기존게임 continue 여부 질문 및 그에 따른 처리수행
 	 */
 	public void resumeGame() {
-		if (board.checkSave()) {
+		if (util.checkSave()) {
 			ImageIcon question = new ImageIcon(getClass().getResource("/resources/question.png"));
 
 			int option = JOptionPane.showOptionDialog(null, "Do you want to continue your saved game?",
@@ -102,7 +109,7 @@ public class Game {
 			case JOptionPane.YES_OPTION:
 
 				// load board's state
-				Pair p = board.loadSaveGame();
+				Pair p = util.loadSaveGame();
 
 				// set button's images
 				// private 전역변수를 사용하지 않고 파라메터를 이용하여 설정하는게 낫지 않을까?
@@ -120,11 +127,11 @@ public class Game {
 				break;
 
 			case JOptionPane.NO_OPTION:
-				board.deleteSavedGame();
+				util.deleteSavedGame();
 				break;
 
 			case JOptionPane.CLOSED_OPTION:
-				board.deleteSavedGame();
+				util.deleteSavedGame();
 				break;
 			}
 		}
@@ -132,54 +139,37 @@ public class Game {
 
 	// -------------------------------------------------//
 	public void setButtonImages() {
-		Cell cells[][] = board.getCells();
-		JButton buttons[][] = gui.getCellBtnArr();
+		CellBtn cellBtnArr[][] = gui.getCellBtnArr();
 
-		for (int y = 0; y < board.getRows(); y++) {
-			for (int x = 0; x < board.getCols(); x++) {
-				buttons[x][y].setIcon(null);
-
-				if (cells[x][y].getContent().equals("")) {
-					buttons[x][y].setIcon(gui.getIconTile());
-				} else if (cells[x][y].getContent().equals("F")) {
-					buttons[x][y].setIcon(gui.getIconFlag());
-					buttons[x][y].setBackground(Color.blue);
-				} else if (cells[x][y].getContent().equals("0")) {
-					buttons[x][y].setBackground(Color.lightGray);
+		for (int y = 0; y < rows; y++) {
+			for (int x = 0; x < cols; x++) {
+				cellBtnArr[x][y].setIcon(null);
+				
+				if ("".equals(cellBtnArr[x][y].getContent())) {
+					cellBtnArr[x][y].setIcon(gui.getIconTile());
+				} else if ("F".equals(cellBtnArr[x][y].getContent())) {
+					cellBtnArr[x][y].setIcon(gui.getIconFlag());
+					cellBtnArr[x][y].setBackground(Color.blue);
+				} else if ("0".equals(cellBtnArr[x][y].getContent())) {
+					cellBtnArr[x][y].setBackground(Color.lightGray);
 				} else {
-					buttons[x][y].setBackground(Color.lightGray);
-					buttons[x][y].setText(cells[x][y].getContent());
-					gui.setTextColor(buttons[x][y]);
+					cellBtnArr[x][y].setBackground(Color.lightGray);
+					cellBtnArr[x][y].setText(cellBtnArr[x][y].getContent());
+					gui.setTextColor(cellBtnArr[x][y]);
 				}
 			}
 		}
 	}
-
-	// ------------------------------------------------------------//
-
-	public void createBoard() {
-		// Create a new board
-		int mines = 10;
-
-		int r = 9;
-		int c = 9;
-
-		this.board = new Board(mines, r, c);
-	}
-
-	// ---------------------------------------------------------------//
 	/*
 	 * newGame이나 restartGame이나 기능은 동일한 코드가 중복되어 표기되어 있음.
 	 */
 	public void newGame() {
 		this.playing = false;
 
-		createBoard();
-
 		gui.interruptTimer();
 		gui.resetTimer();
 		gui.initGame();
-		gui.setMines(board.getNumberOfMines());
+		gui.setMines(totMineCnt);
 	}
 	// ------------------------------------------------------------------------------//
 
@@ -190,7 +180,7 @@ public class Game {
 		gui.interruptTimer();
 		gui.resetTimer();
 		gui.initGame();
-		gui.setMines(board.getNumberOfMines());
+		gui.setMines(totMineCnt);
 	}
 
 	// ------------------------------------------------------------------------------//
@@ -519,48 +509,47 @@ public class Game {
 
 	// Shows the "solution" of the game.
 	private void showAll() {
-		String cellSolution;
+		String cellContent;
 
-		Cell cells[][] = board.getCells();
-		JButton buttons[][] = gui.getCellBtnArr();
+		CellBtn cellBtnArr[][] = gui.getCellBtnArr();
 
-		for (int x = 0; x < board.getCols(); x++) {
-			for (int y = 0; y < board.getRows(); y++) {
-				cellSolution = cells[x][y].getContent();
+		for (int x = 0; x < cols; x++) {
+			for (int y = 0; y < rows; y++) {
+				cellContent = cellBtnArr[x][y].getContent();
 
 				// Is the cell still unrevealed
-				if (cellSolution.equals("")) {
-					buttons[x][y].setIcon(null);
+				if (cellContent.equals("")) {
+					cellBtnArr[x][y].setIcon(null);
 
 					// Get Neighbours
-					cellSolution = Integer.toString(cells[x][y].getSurroundingMines());
+					cellContent = Integer.toString(cellBtnArr[x][y].getSurroundingMineCnt());
 
 					// Is it a mine?
-					if (cells[x][y].getMine()) {
-						cellSolution = "M";
+					if (cellBtnArr[x][y].isMineBuried()) {
+						cellContent = "M";
 
 						// mine
-						buttons[x][y].setIcon(gui.getIconMine());
-						buttons[x][y].setBackground(Color.lightGray);
+						cellBtnArr[x][y].setIcon(gui.getIconMine());
+						cellBtnArr[x][y].setBackground(Color.lightGray);
 					} else {
-						if (cellSolution.equals("0")) {
-							buttons[x][y].setText("");
-							buttons[x][y].setBackground(Color.lightGray);
+						if (cellContent.equals("0")) {
+							cellBtnArr[x][y].setText("");
+							cellBtnArr[x][y].setBackground(Color.lightGray);
 						} else {
-							buttons[x][y].setBackground(Color.lightGray);
-							buttons[x][y].setText(cellSolution);
-							gui.setTextColor(buttons[x][y]);
+							cellBtnArr[x][y].setBackground(Color.lightGray);
+							cellBtnArr[x][y].setText(cellContent);
+							gui.setTextColor(cellBtnArr[x][y]);
 						}
 					}
 				}
 
 				// This cell is already flagged!
-				else if (cellSolution.equals("F")) {
+				else if (cellContent.equals("F")) {
 					// Is it correctly flagged?
-					if (!cells[x][y].getMine()) {
-						buttons[x][y].setBackground(Color.orange);
+					if (!cellBtnArr[x][y].isMineBuried()) {
+						cellBtnArr[x][y].setBackground(Color.orange);
 					} else
-						buttons[x][y].setBackground(Color.green);
+						cellBtnArr[x][y].setBackground(Color.green);
 				}
 
 			}
@@ -584,21 +573,17 @@ public class Game {
 	public boolean isFinished() {
 		boolean isFinished = true;
 		String cellSolution;
+		
+		CellBtn cellBtnArr[][] = gui.getCellBtnArr();
 
-		Cell cells[][] = board.getCells();
+		for (int x = 0; x < cols; x++) {
+			for (int y = 0; y < rows; y++) {
+				cellSolution = Integer.toString(cellBtnArr[x][y].getSurroundingMineCnt()); //해당 셀 주변 지뢰의 숫자
 
-		for (int x = 0; x < board.getCols(); x++) {
-			for (int y = 0; y < board.getRows(); y++) {
-				// If a game is solved, the content of each Cell should match the value of its
-				// surrounding mines
-				cellSolution = Integer.toString(cells[x][y].getSurroundingMines()); //해당 셀 주변 지뢰의 숫자
-
-				if (cells[x][y].getMine()) //해당 셀에 지뢰가 있으면 "F"로 변환
+				if (cellBtnArr[x][y].isMineBuried()) //해당 셀에 지뢰가 있으면 "F"로 변환
 					cellSolution = "F";
 
-				// Compare the player's "answer" to the solution.
-				if (!cells[x][y].getContent().equals(cellSolution)) { //해당셀의 내용이 "F"가 아닌건이 있으면 게임이 클리어 되지 않음
-					// This cell is not solved yet
+				if (!cellBtnArr[x][y].getContent().equals(cellSolution)) { //해당셀의 내용이 "F"가 아닌건이 있으면 게임이 클리어 되지 않음
 					isFinished = false;
 					break;
 				}
@@ -613,6 +598,17 @@ public class Game {
 		if (isFinished()) {
 			gameWon();
 		}
+	}
+	
+	//게임 기본 정보 반환
+	public HashMap<String,Object> getGameInfo() {
+		HashMap<String,Object> map = new HashMap<String,Object>();
+		map.put("rows", rows);
+		map.put("cols", cols);
+		map.put("totMineCnt", totMineCnt);
+		map.put("cellBtn", gui.getCellBtnArr().clone());
+		
+		return map;
 	}
 
 	// ----------------------------------------------------------------------/
