@@ -3,8 +3,7 @@ package minesweeper_refactoring;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.io.File;
-import java.net.URISyntaxException;
+import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -32,10 +31,7 @@ import minesweeper_refactoring.ui.CellBtn;
  * 
  */
 public class Game {
-	public static String dbPath;
-	// "playing" indicates whether a game is running (true) or not (false).
 	public boolean playing;
-
 	
 	public DBUtil util;
 
@@ -46,7 +42,7 @@ public class Game {
 	//가로세로 크기 및 전체 지뢰 개수 초기화된 설정은 기본설정 값
 	private int rows = 9;
 	private int cols = 9;
-	private int totMineCnt = 10;
+	private int totMineCnt = 1;
 
 	public Game() {
 		new Game(rows, cols, totMineCnt);
@@ -56,39 +52,24 @@ public class Game {
 		this.rows = rows;
 		this.cols = cols;
 		this.totMineCnt = totMineCnt;
-		
-		// set db path
-		String p = "";
 
-		try {
-			p = new File(Game.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getPath()
-					+ "\\db.accdb";
-		} catch (URISyntaxException ex) {
-			System.out.println("Error loading database file.");
-		}
-
-		dbPath = "jdbc:ucanaccess://" + p;
-
-		score = new Score();
-		score.populate(); // 기존 게임진행회수 + best클리어 시간 반환
-
-		UI.setLook("Nimbus");
-		
-		//swing을 이용하여 GUI설정
-		this.gui = new UI(9, 9, 10); //나중에 외부설정으로 구현할수 있도록 처리
-		
-		GameEventExec exec = new GameEventExec(score, gui, this);
-		
-		this.gui.setButtonListeners(exec); //new
+		gui = new UI(rows, cols, totMineCnt);
+		gui.setLook("Nimbus");
 
 		this.playing = false;
 
 		gui.setVisible(true);
 
-		//gui.setIcon();
+		gui.setIcon();
 		gui.hideAll();
 		
-		util = new DBUtil(this); //lazy init필요
+		util = new DBUtil(this);
+		
+		score = new Score();
+		util.populate(score); // 기존 게임진행회수 + best클리어 시간 반환
+		
+		GameEventExec exec = new GameEventExec(score, gui, this);
+		this.gui.setButtonListeners(exec);
 		
 		resumeGame();
 	}
@@ -100,78 +81,38 @@ public class Game {
 	 */
 	public void resumeGame() {
 		if (util.checkSave()) {
-			ImageIcon question = new ImageIcon(getClass().getResource("/resources/question.png"));
-
-			int option = JOptionPane.showOptionDialog(null, "Do you want to continue your saved game?",
-					"Saved Game Found", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, question, null, null);
-
+			int option = gui.getUIDialog().getOptionYNDialog("Do you want to continue your saved game?", "Saved Game Found", null, null);
+			
 			switch (option) {
-			case JOptionPane.YES_OPTION:
-
-				// load board's state
-				Pair p = util.loadSaveGame();
-
-				// set button's images
-				// private 전역변수를 사용하지 않고 파라메터를 이용하여 설정하는게 낫지 않을까?
-				setButtonImages();
-
-				// load timer's value
-				gui.setTimePassed((int) p.getKey());
-
-				// load mines value
-				gui.setMines((int) p.getValue());
-
-				gui.startTimer();
-
-				playing = true;
-				break;
-
-			case JOptionPane.NO_OPTION:
-				util.deleteSavedGame();
-				break;
-
-			case JOptionPane.CLOSED_OPTION:
-				util.deleteSavedGame();
-				break;
+				case JOptionPane.YES_OPTION:
+					Pair p = util.loadSaveGame();
+	
+					gui.setButtonImages();
+					gui.setTimePassed((int) p.getKey());
+					gui.setMines((int) p.getValue());
+					gui.startTimer();
+	
+					playing = true;
+					break;
+				case JOptionPane.NO_OPTION:
+					util.deleteSavedGame();
+					break;
+				case JOptionPane.CLOSED_OPTION:
+					util.deleteSavedGame();
+					break;
 			}
 		}
 	}
 
-	// -------------------------------------------------//
-	public void setButtonImages() {
-		CellBtn cellBtnArr[][] = gui.getCellBtnArr();
-
-		for (int y = 0; y < rows; y++) {
-			for (int x = 0; x < cols; x++) {
-				cellBtnArr[x][y].setIcon(null);
-				
-				if ("".equals(cellBtnArr[x][y].getContent())) {
-					cellBtnArr[x][y].setIcon(gui.getIconTile());
-				} else if ("F".equals(cellBtnArr[x][y].getContent())) {
-					cellBtnArr[x][y].setIcon(gui.getIconFlag());
-					cellBtnArr[x][y].setBackground(Color.blue);
-				} else if ("0".equals(cellBtnArr[x][y].getContent())) {
-					cellBtnArr[x][y].setBackground(Color.lightGray);
-				} else {
-					cellBtnArr[x][y].setBackground(Color.lightGray);
-					cellBtnArr[x][y].setText(cellBtnArr[x][y].getContent());
-					gui.setTextColor(cellBtnArr[x][y]);
-				}
-			}
-		}
-	}
-	/*
-	 * newGame이나 restartGame이나 기능은 동일한 코드가 중복되어 표기되어 있음.
-	 */
 	public void newGame() {
 		this.playing = false;
-
+		
+		gui.resetBtn();
 		gui.interruptTimer();
 		gui.resetTimer();
 		gui.initGame();
 		gui.setMines(totMineCnt);
 	}
-	// ------------------------------------------------------------------------------//
 
 	public void restartGame() {
 		this.playing = false;
@@ -182,17 +123,13 @@ public class Game {
 		gui.initGame();
 		gui.setMines(totMineCnt);
 	}
-
-	// ------------------------------------------------------------------------------//
+	
 	private void endGame() {
 		playing = false;
 		showAll();
 
-		score.save();
+		util.saveScore(score);
 	}
-
-	// -------------------------GAME WON AND GAME LOST
-	// ---------------------------------//
 	
 	/*
 	 * 게임을 클리어 했을때 동작 정의
@@ -206,80 +143,55 @@ public class Game {
 
 		gui.interruptTimer();
 		endGame();
-		// ----------------------------------------------------------------//
-
-		JDialog dialog = new JDialog(gui, Dialog.ModalityType.DOCUMENT_MODAL);
-
-		// ------MESSAGE-----------//
-		JLabel message = new JLabel("Congratulations, you won the game!", SwingConstants.CENTER);
-
-		// -----STATISTICS-----------//
-		JPanel statistics = new JPanel();
-		statistics.setLayout(new GridLayout(6, 1, 0, 10));
-
+		
 		ArrayList<Time> bTimes = score.getBestTimes();
-
-		if (bTimes.isEmpty() || (bTimes.get(0).getTimeValue() > gui.getTimePassed())) {
-			statistics.add(new JLabel("    You have the fastest time for this difficulty level!    "));
-		}
-
 		score.addTime(gui.getTimePassed(), new Date(System.currentTimeMillis()));
-
-		JLabel time = new JLabel("  Time:  " + Integer.toString(gui.getTimePassed()) + " seconds            Date:  "
+		
+		HashMap<String,Object> retMap = gui.getUIDialog().gameWonDialog();
+		
+		JDialog dialog = (JDialog)retMap.get("dialog");
+		
+		//JDialog의 컴포넌트에 데이터에 따른 값을 입력
+		JLabel bestTimeAnn = (JLabel)retMap.get("bestTimeAnn");
+		JLabel time = (JLabel)retMap.get("time");
+		JLabel bestTime = (JLabel)retMap.get("bestTime");
+		JLabel gPlayed = (JLabel)retMap.get("gPlayed");
+		JLabel gWon = (JLabel)retMap.get("gWon");
+		JLabel gPercentage = (JLabel)retMap.get("gPercentage");
+		
+		if (bTimes.isEmpty() || (bTimes.get(0).getTimeValue() > gui.getTimePassed())) {
+			bestTimeAnn.setText("    You have the fastest time for this difficulty level!    ");
+		}else {
+			bestTimeAnn.setText("        ");
+			
+		}
+		
+		time.setText("  Time:  " + Integer.toString(gui.getTimePassed()) + " seconds            Date:  "
 				+ new Date(System.currentTimeMillis()));
-
-		JLabel bestTime = new JLabel();
-
+		
 		if (bTimes.isEmpty()) {
 			bestTime.setText("  Best Time:  ---                  Date:  ---");
 		} else {
 			bestTime.setText("  Best Time:  " + bTimes.get(0).getTimeValue() + " seconds            Date:  "
 					+ bTimes.get(0).getDateValue());
 		}
-
-		JLabel gPlayed = new JLabel("  Games Played:  " + score.getGamesPlayed());
-		JLabel gWon = new JLabel("  Games Won:  " + score.getGamesWon());
-		JLabel gPercentage = new JLabel("  Win Percentage:  " + score.getWinPercentage() + "%");
-
-		statistics.add(time);
-		statistics.add(bestTime);
-		statistics.add(gPlayed);
-		statistics.add(gWon);
-		statistics.add(gPercentage);
-
-		Border loweredetched = BorderFactory.createEtchedBorder(EtchedBorder.LOWERED);
-		statistics.setBorder(loweredetched);
-
-		// --------BUTTONS----------//
-		JPanel buttons = new JPanel();
-		buttons.setLayout(new GridLayout(1, 2, 10, 0));
-
-		JButton exit = new JButton("Exit");
-		JButton playAgain = new JButton("Play Again");
-
-		exit.addActionListener((ActionEvent e) -> {
+		
+		gPlayed.setText("  Games Played:  " + score.getGamesPlayed());
+		gWon.setText("  Games Won:  " + score.getGamesWon());
+		gPercentage.setText("  Win Percentage:  " + score.getWinPercentage() + "%");
+		
+		JButton exitBtn = (JButton)retMap.get("exitBtn");
+		JButton playAgainBtn = (JButton)retMap.get("playAgainBtn");
+		
+		exitBtn.addActionListener((ActionEvent e) -> {
 			dialog.dispose();
-			//windowClosing(null); //에러처리를 위해 임시로 주석 처리
+			dialog.dispatchEvent(new WindowEvent(dialog, WindowEvent.WINDOW_CLOSING));
 		});
-		playAgain.addActionListener((ActionEvent e) -> {
+		playAgainBtn.addActionListener((ActionEvent e) -> {
 			dialog.dispose();
 			newGame();
 		});
-
-		buttons.add(exit);
-		buttons.add(playAgain);
-
-		// --------DIALOG-------------//
-
-		JPanel c = new JPanel();
-		c.setLayout(new BorderLayout(20, 20));
-		c.add(message, BorderLayout.NORTH);
-		c.add(statistics, BorderLayout.CENTER);
-		c.add(buttons, BorderLayout.SOUTH);
-
-		c.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-
-		dialog.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		
 		dialog.addWindowListener(new java.awt.event.WindowAdapter() {
 			@Override
 			public void windowClosing(java.awt.event.WindowEvent windowEvent) {
@@ -287,11 +199,7 @@ public class Game {
 				newGame();
 			}
 		});
-
-		dialog.setTitle("Game Won");
-		dialog.add(c);
-		dialog.pack();
-		dialog.setLocationRelativeTo(gui);
+		
 		dialog.setVisible(true);
 	}
 	
@@ -308,80 +216,51 @@ public class Game {
 		gui.interruptTimer();
 
 		endGame();
-
-		// ----------------------------------------------------------------//
-
-		JDialog dialog = new JDialog(gui, Dialog.ModalityType.DOCUMENT_MODAL);
-
-		// ------MESSAGE-----------//
-		JLabel message = new JLabel("Sorry, you lost this game. Better luck next time!", SwingConstants.CENTER);
-
-		// -----STATISTICS-----------//
-		JPanel statistics = new JPanel();
-		statistics.setLayout(new GridLayout(5, 1, 0, 10));
-
-		JLabel time = new JLabel("  Time:  " + Integer.toString(gui.getTimePassed()) + " seconds");
-
-		JLabel bestTime = new JLabel();
-
+		
 		ArrayList<Time> bTimes = score.getBestTimes();
-
-		if (bTimes.isEmpty()) {
-			bestTime.setText("                        ");
-		} else {
+		
+		HashMap<String,Object> retMap = gui.getUIDialog().gameLostDialog();
+		
+		JDialog dialog = (JDialog)retMap.get("dialog");
+		
+		//JDialog의 컴포넌트에 데이터에 따른 값을 입력
+		JLabel time = (JLabel)retMap.get("time");
+		JLabel bestTime = (JLabel)retMap.get("bestTime");
+		JLabel gPlayed = (JLabel)retMap.get("gPlayed");
+		JLabel gWon = (JLabel)retMap.get("gWon");
+		JLabel gPercentage = (JLabel)retMap.get("gPercentage");
+		
+		time.setText("  Time:  " + Integer.toString(gui.getTimePassed()) + " seconds");
+		
+		if(!bTimes.isEmpty()) {
 			bestTime.setText("  Best Time:  " + bTimes.get(0).getTimeValue() + " seconds            Date:  "
 					+ bTimes.get(0).getDateValue());
+		}else {
+			bestTime.setText("                        ");
 		}
-
-		JLabel gPlayed = new JLabel("  Games Played:  " + score.getGamesPlayed());
-		JLabel gWon = new JLabel("  Games Won:  " + score.getGamesWon());
-		JLabel gPercentage = new JLabel("  Win Percentage:  " + score.getWinPercentage() + "%");
-
-		statistics.add(time);
-		statistics.add(bestTime);
-		statistics.add(gPlayed);
-		statistics.add(gWon);
-		statistics.add(gPercentage);
-
-		Border loweredetched = BorderFactory.createEtchedBorder(EtchedBorder.LOWERED);
-		statistics.setBorder(loweredetched);
-
-		// --------BUTTONS----------//
-		JPanel buttons = new JPanel();
-		buttons.setLayout(new GridLayout(1, 3, 2, 0));
-
-		JButton exit = new JButton("Exit");
-		JButton restart = new JButton("Restart");
-		JButton playAgain = new JButton("Play Again");
-
-		exit.addActionListener((ActionEvent e) -> {
+		
+		gPlayed.setText("  Games Played:  " + score.getGamesPlayed());
+		gWon.setText("  Games Won:  " + score.getGamesWon());
+		gPercentage.setText("  Win Percentage:  " + score.getWinPercentage() + "%");
+		
+		
+		JButton exitBtn = (JButton)retMap.get("exitBtn");
+		JButton restartBtn = (JButton)retMap.get("restartBtn");
+		JButton playAgainBtn = (JButton)retMap.get("playAgainBtn");
+		
+		exitBtn.addActionListener((ActionEvent e) -> {
 			dialog.dispose();
-			//windowClosing(null); //에러처리를 위해 임시로 주석처리
+			dialog.dispatchEvent(new WindowEvent(dialog, WindowEvent.WINDOW_CLOSING));
 		});
-		restart.addActionListener((ActionEvent e) -> {
+		restartBtn.addActionListener((ActionEvent e) -> {
 			dialog.dispose();
 			restartGame();
 		});
-		playAgain.addActionListener((ActionEvent e) -> {
+		playAgainBtn.addActionListener((ActionEvent e) -> {
 			dialog.dispose();
 			newGame();
 		});
-
-		buttons.add(exit);
-		buttons.add(restart);
-		buttons.add(playAgain);
-
-		// --------DIALOG-------------//
-
-		JPanel c = new JPanel();
-		c.setLayout(new BorderLayout(20, 20));
-		c.add(message, BorderLayout.NORTH);
-		c.add(statistics, BorderLayout.CENTER);
-		c.add(buttons, BorderLayout.SOUTH);
-
-		c.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-
-		dialog.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		
 		dialog.addWindowListener(new java.awt.event.WindowAdapter() {
 			@Override
 			public void windowClosing(java.awt.event.WindowEvent windowEvent) {
@@ -389,11 +268,7 @@ public class Game {
 				newGame();
 			}
 		});
-
-		dialog.setTitle("Game Lost");
-		dialog.add(c);
-		dialog.pack();
-		dialog.setLocationRelativeTo(gui);
+		
 		dialog.setVisible(true);
 	}
 
@@ -472,7 +347,7 @@ public class Game {
 			case JOptionPane.YES_OPTION:
 
 				score.resetScore();
-				score.save();
+				util.saveScore(score);
 				dialog.dispose();
 				showScore();
 				break;
@@ -609,6 +484,10 @@ public class Game {
 		map.put("cellBtn", gui.getCellBtnArr().clone());
 		
 		return map;
+	}
+	
+	public DBUtil getDBUtil() {
+		return util;
 	}
 
 	// ----------------------------------------------------------------------/

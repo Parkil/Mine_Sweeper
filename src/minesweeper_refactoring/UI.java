@@ -10,6 +10,7 @@ import minesweeper_refactoring.event.EventMenu;
 import minesweeper_refactoring.event.EventMouse;
 import minesweeper_refactoring.event.EventWindow;
 import minesweeper_refactoring.ui.CellBtn;
+import minesweeper_refactoring.ui.UIDialog;
 
 public class UI extends JFrame {
 	private static final long serialVersionUID = 1L;
@@ -52,8 +53,12 @@ public class UI extends JFrame {
 	private JMenuItem statistics;
 	private JMenuItem exit;
 	
+	private UIDialog uiDialog;
+	
 	//overloading
 	public UI(int rows, int cols, int mineCnt) {
+		uiDialog = new UIDialog(this);
+		
 		this.rows = rows;
 		this.cols = cols;
 		this.mineCnt = mineCnt;
@@ -186,7 +191,7 @@ public class UI extends JFrame {
 
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		
-		setIcon(cellBtnArr[0][0]);
+		setIcon();
 	}
 	
 	
@@ -415,23 +420,18 @@ public class UI extends JFrame {
 		return timePassed;
 	}
 
-	// ----------------------SET LOOK------------------------------//
-
-	public static void setLook(String look) {
+	public void setLook(String look) {
 		try {
-
 			for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
 				if (look.equals(info.getName())) {
 					UIManager.setLookAndFeel(info.getClassName());
 					break;
 				}
 			}
-
 		} catch (Exception ex) {
+			ex.printStackTrace();
 		}
 	}
-
-	// -------------------------------------------------------------//
 
 	public void setMines(int m) {
 		mineCnt = m;
@@ -458,7 +458,8 @@ public class UI extends JFrame {
 		return new ImageIcon(resizedImage);
 	}
 
-	public void setIcon(JButton btn) {
+	public void setIcon() {
+		CellBtn btn = cellBtnArr[0][0];
 		int bOffset = btn.getInsets().left;
 		int bWidth = btn.getWidth();
 		int bHeight = btn.getHeight();
@@ -493,8 +494,14 @@ public class UI extends JFrame {
 	public Icon getIconTile() {
 		return tile;
 	}
-
-	// ---------------------------------------------------------------------//
+	
+	public UIDialog getUIDialog() {
+		return uiDialog;
+	}
+	
+	/** 버튼 셀의 주변지뢰 개수에 따라 숫자의 색을 다르게 설정
+	 * @param b JButton
+	 */
 	public void setTextColor(JButton b) {
 		if (b.getText().equals("1"))
 			b.setForeground(Color.blue);
@@ -513,5 +520,28 @@ public class UI extends JFrame {
 		else if (b.getText().equals("8"))
 			b.setForeground(new Color(153, 0, 76));
 	}
-	// ------------------------------------------------------------------------//
+	
+	/*
+	 * 각 버튼 상태에 따른 아이콘 및 배경색 설정
+	 */
+	public void setButtonImages() {
+		for (int y = 0; y < rows; y++) {
+			for (int x = 0; x < cols; x++) {
+				cellBtnArr[x][y].setIcon(null);
+				
+				if ("".equals(cellBtnArr[x][y].getContent())) {
+					cellBtnArr[x][y].setIcon(getIconTile());
+				} else if ("F".equals(cellBtnArr[x][y].getContent())) {
+					cellBtnArr[x][y].setIcon(getIconFlag());
+					cellBtnArr[x][y].setBackground(Color.blue);
+				} else if ("0".equals(cellBtnArr[x][y].getContent())) {
+					cellBtnArr[x][y].setBackground(Color.lightGray);
+				} else {
+					cellBtnArr[x][y].setBackground(Color.lightGray);
+					cellBtnArr[x][y].setText(cellBtnArr[x][y].getContent());
+					setTextColor(cellBtnArr[x][y]);
+				}
+			}
+		}
+	}
 }

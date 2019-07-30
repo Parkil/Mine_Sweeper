@@ -7,7 +7,6 @@ import javax.swing.JDialog;
 import javax.swing.SwingWorker;
 
 import minesweeper_refactoring.ui.CellBtn;
-import minesweeper_refactoring.ui.UIDialog;
 
 /*
  * Event Listener에 전달할 객체 Lister에서 실제 지뢰찾기에서 수행되어야 하는 동작을 정의
@@ -22,45 +21,42 @@ public class GameEventExec {
 	
 	private Game game;
 	
-	private UIDialog uiDialog;
-	
 	public GameEventExec(Score score, UI gui, Game game) {
 		this.score = score;
 		this.gui = gui;
 		this.game = game;
-		this.uiDialog = new UIDialog(gui);
 	}
 	
 	//window 종료시 저장
 	public void windowEventQuitSave() {
 		gui.interruptTimer();
-		score.save();
+		game.getDBUtil().saveScore(score);
 		windowClosingSaveDialog();
 	}
 	
 	//window 종료시 저장안함
 	public void windowEventQuitNoSave() {
 		score.incGamesPlayed();
-		score.save();
+		game.getDBUtil().saveScore(score);
 	}
 	
 	//menu > Start New Game
 	public void menuEventNewGame() {
-		game.newGame(); //--
-		score.incGamesPlayed(); // --
-		score.save(); // --
+		game.newGame();
+		score.incGamesPlayed();
+		game.getDBUtil().saveScore(score);
 	}
 	
 	//menu > restart
 	public void menuEventRestartGame() {
-		score.incGamesPlayed(); // --
-		score.save(); // --
-		game.restartGame(); // --
+		score.incGamesPlayed();
+		game.getDBUtil().saveScore(score);
+		game.restartGame();
 	}
 	
 	//menu > statistics
 	public void menuEventStatistics() {
-		game.showScore(); // --
+		game.showScore();
 	}
 	
 	//window closing event 발생
@@ -87,7 +83,7 @@ public class GameEventExec {
 	
 	
 	public void checkGame() {
-		//game.checkGame();
+		game.checkGame();
 	}
 	
 	//왼쪽클릭 처리
@@ -152,7 +148,7 @@ public class GameEventExec {
 		Object[] options = { "Quit and Start a New Game", "Restart", "Keep Playing" };
 		Object initValue = options[2];
 		
-		return uiDialog.getOptionDialog(title, dialogContent, options, initValue);
+		return gui.getUIDialog().getOptionYNCancelDialog(title, dialogContent, options, initValue);
 	}
 	
 	//window closing시 선택 단순 dialog 표시
@@ -162,17 +158,17 @@ public class GameEventExec {
 		Object[] options = { "Save", "Don't Save", "Cancel" };
 		Object initValue = options[2];
 		
-		return uiDialog.getOptionDialog(title, dialogContent, options, initValue);
+		return gui.getUIDialog().getOptionYNCancelDialog(title, dialogContent, options, initValue);
 	}
 	
 	//window closing시 저장상태를 표시하는 dialog 표시
 	public void windowClosingSaveDialog() {
-		JDialog dialog = uiDialog.windowClosingSaveDialog();
+		JDialog dialog = gui.getUIDialog().windowClosingSaveDialog();
 		
 		SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
 			@Override
 			protected Void doInBackground() throws Exception {
-				//board.saveGame(gui.getTimePassed(), gui.getMines());
+				game.getDBUtil().saveGame(gui.getTimePassed(), gui.getMines());
 				return null;
 			}
 
