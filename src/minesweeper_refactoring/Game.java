@@ -1,20 +1,22 @@
 package minesweeper_refactoring;
 
-import javax.swing.*;
-import java.awt.*;
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import javax.swing.border.Border;
-import javax.swing.border.EtchedBorder;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+
 import java.sql.Date;
 import javafx.util.Pair;
-import javax.swing.border.TitledBorder;
 import minesweeper_refactoring.Score.Time;
 import minesweeper_refactoring.db.DBUtil;
 import minesweeper_refactoring.ui.CellBtn;
+import minesweeper_refactoring.ui.UIWindow;
 
 //지뢰찾기 메인 클래스
 /*
@@ -35,14 +37,14 @@ public class Game {
 	
 	public DBUtil util;
 
-	public UI gui;
+	public UIWindow gui;
 
 	public Score score;
 	
 	//가로세로 크기 및 전체 지뢰 개수 초기화된 설정은 기본설정 값
 	private int rows = 9;
 	private int cols = 9;
-	private int totMineCnt = 1;
+	private int totMineCnt = 10;
 
 	public Game() {
 		new Game(rows, cols, totMineCnt);
@@ -53,7 +55,7 @@ public class Game {
 		this.cols = cols;
 		this.totMineCnt = totMineCnt;
 
-		gui = new UI(rows, cols, totMineCnt);
+		gui = new UIWindow(rows, cols, totMineCnt);
 		gui.setLook("Nimbus");
 
 		this.playing = false;
@@ -79,6 +81,7 @@ public class Game {
 	/*
 	 * 기존에 저장된 게임이 존재할 경우 기존게임 continue 여부 질문 및 그에 따른 처리수행
 	 */
+	@SuppressWarnings("rawtypes")
 	public void resumeGame() {
 		if (util.checkSave()) {
 			int option = gui.getUIDialog().getOptionYNDialog("Do you want to continue your saved game?", "Saved Game Found", null, null);
@@ -131,9 +134,8 @@ public class Game {
 		util.saveScore(score);
 	}
 	
-	/*
-	 * 게임을 클리어 했을때 동작 정의
-	 * UI를 담당하는 클래스가 따로 있음에도 클리어시 UI를 동작하는 로직이 같이 들어가 있음 이를 UI.java에 동작을 정의하고 게임클리어시 동작을 호출하는 방식으로 변경할 필요가 있다.
+	/**
+	 * 게임 클리어시 관련로직
 	 */
 	public void gameWon() {
 		score.incCurrentStreak();
@@ -200,13 +202,17 @@ public class Game {
 			}
 		});
 		
+		/*
+		 * dialog.pack()과 dialog.setVisible은 동일한 소스에서 선언해야 정상적으로 작동함
+		 * java doc에서는 해당 window가 display되기전에 size계산이 되고 나중에 display가 되면
+		 * pack을 호출할때에는 검증작업만 한다고 나와있음
+		 */
+		dialog.pack();
 		dialog.setVisible(true);
 	}
 	
-	/*
-	 * GameOver시 동작정의
-	 * UI를 담당하는 클래스가 따로 있음에도 클리어시 UI를 동작하는 로직이 같이 들어가 있음 이를 UI.java에 동작을 정의하고 게임클리어시 동작을 호출하는 방식으로 변경할 필요가 있다.
-	 * 해당코드도 gameWon과 마찬가지로 gameWon메소드와 문구및 내부 파라메터 변경을 제외하고는 거의 로직이 동일하다 
+	/**
+	 * Game Over시 동작 정의 
 	 */
 	public void gameLost() {
 		score.decCurrentStreak();
@@ -269,118 +275,80 @@ public class Game {
 			}
 		});
 		
+		dialog.pack();
 		dialog.setVisible(true);
 	}
 
-	// --------------------------------SCORE
-	// BOARD--------------------------------------//
-	/*
-	 * 점수표시
-	 * gameLost와 동일하게 swing부분을 UI class로 이관이 필요
+	/**
+	 * 베스트 기록 표시
 	 */
 	public void showScore() {
-		// ----------------------------------------------------------------//
-
-		JDialog dialog = new JDialog(gui, Dialog.ModalityType.DOCUMENT_MODAL);
-
-		// -----BEST TIMES--------//
-
-		JPanel bestTimes = new JPanel();
-		bestTimes.setLayout(new GridLayout(5, 1));
-
 		ArrayList<Time> bTimes = score.getBestTimes();
-
-		for (int i = 0; i < bTimes.size(); i++) {
-			JLabel t = new JLabel("  " + bTimes.get(i).getTimeValue() + "           " + bTimes.get(i).getDateValue());
-			bestTimes.add(t);
-		}
-
+		
+		HashMap<String,Object> retMap = gui.getUIDialog().showScoreDialog();
+		
+		JDialog dialog = (JDialog)retMap.get("dialog");
+		
 		if (bTimes.isEmpty()) {
-			JLabel t = new JLabel("                               ");
-			bestTimes.add(t);
+			for(int i=1 ; i<=5 ; i++) {
+				JLabel bestTime = (JLabel)retMap.get("bestTime"+i);
+				bestTime.setText("                               ");
+			}
+		} else {
+			for(int i=0 ; i<bTimes.size() ; i++) {
+				JLabel bestTime = (JLabel)retMap.get("bestTime"+(i+1));
+				bestTime.setText("  " + bTimes.get(i).getTimeValue() + "           " + bTimes.get(i).getDateValue());
+			}
+			
+			for(int j=bTimes.size()+1 ; j <= 5; j++) {
+				JLabel bestTime = (JLabel)retMap.get("bestTime"+j);
+				bestTime.setText("                               ");
+			}
 		}
-
-		TitledBorder b = BorderFactory.createTitledBorder("Best Times");
-		b.setTitleJustification(TitledBorder.LEFT);
-
-		bestTimes.setBorder(b);
-
-		// -----STATISTICS-----------//
-		JPanel statistics = new JPanel();
-
-		statistics.setLayout(new GridLayout(6, 1, 0, 10));
-
-		JLabel gPlayed = new JLabel("  Games Played:  " + score.getGamesPlayed());
-		JLabel gWon = new JLabel("  Games Won:  " + score.getGamesWon());
-		JLabel gPercentage = new JLabel("  Win Percentage:  " + score.getWinPercentage() + "%");
-		JLabel lWin = new JLabel("  Longest Winning Streak:  " + score.getLongestWinningStreak());
-		JLabel lLose = new JLabel("  Longest Losing Streak:  " + score.getLongestLosingStreak());
-		JLabel currentStreak = new JLabel("  Current Streak:  " + score.getCurrentStreak());
-
-		statistics.add(gPlayed);
-		statistics.add(gWon);
-		statistics.add(gPercentage);
-		statistics.add(lWin);
-		statistics.add(lLose);
-		statistics.add(currentStreak);
-
-		Border loweredetched = BorderFactory.createEtchedBorder(EtchedBorder.LOWERED);
-		statistics.setBorder(loweredetched);
-
-		// --------BUTTONS----------//
-		JPanel buttons = new JPanel();
-		buttons.setLayout(new GridLayout(1, 2, 10, 0));
-
-		JButton close = new JButton("Close");
-		JButton reset = new JButton("Reset");
-
-		close.addActionListener((ActionEvent e) -> {
+		
+		JLabel gPlayed = (JLabel)retMap.get("gPlayed");
+		JLabel gWon = (JLabel)retMap.get("gWon");
+		JLabel gPercentage = (JLabel)retMap.get("gPercentage");
+		JLabel lWin = (JLabel)retMap.get("lWin");
+		JLabel lLose = (JLabel)retMap.get("lLose");
+		JLabel currentStreak = (JLabel)retMap.get("currentStreak");
+		
+		gPlayed.setText("  Games Played:  " + score.getGamesPlayed());
+		gWon.setText("  Games Won:  " + score.getGamesWon());
+		gPercentage.setText("  Win Percentage:  " + score.getWinPercentage() + "%");
+		lWin.setText("  Longest Winning Streak:  " + score.getLongestWinningStreak());
+		lLose.setText("  Longest Losing Streak:  " + score.getLongestLosingStreak());
+		currentStreak.setText("  Current Streak:  " + score.getCurrentStreak());
+		
+		JButton closeBtn = (JButton)retMap.get("closeBtn");
+		JButton resetBtn = (JButton)retMap.get("resetBtn");
+		
+		if (score.getGamesPlayed() == 0) {
+			resetBtn.setEnabled(false);
+		}
+		
+		closeBtn.addActionListener((ActionEvent e) -> {
 			dialog.dispose();
 		});
-		reset.addActionListener((ActionEvent e) -> {
-			ImageIcon question = new ImageIcon(getClass().getResource("/resources/question.png"));
-
-			int option = JOptionPane.showOptionDialog(null, "Do you want to reset all your statistics to zero?",
-					"Reset Statistics", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, question, null, null);
+		
+		resetBtn.addActionListener((ActionEvent e) -> {
+			int option = gui.getUIDialog().getOptionYNDialog("Do you want to reset all your statistics to zero?", "Reset Statistics", null, null);
 
 			switch (option) {
 			case JOptionPane.YES_OPTION:
-
 				score.resetScore();
 				util.saveScore(score);
 				dialog.dispose();
 				showScore();
 				break;
-
 			case JOptionPane.NO_OPTION:
 				break;
 			}
 		});
-
-		buttons.add(close);
-		buttons.add(reset);
-
-		if (score.getGamesPlayed() == 0)
-			reset.setEnabled(false);
-
-		// --------DIALOG-------------//
-
-		JPanel c = new JPanel();
-		c.setLayout(new BorderLayout(20, 20));
-		c.add(bestTimes, BorderLayout.WEST);
-		c.add(statistics, BorderLayout.CENTER);
-		c.add(buttons, BorderLayout.SOUTH);
-
-		c.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-
-		dialog.setTitle("Minesweeper Statistics - Haris Muneer");
-		dialog.add(c);
+		
 		dialog.pack();
-		dialog.setLocationRelativeTo(gui);
 		dialog.setVisible(true);
 	}
-
-	// ------------------------------------------------------------------------------//
 
 	// Shows the "solution" of the game.
 	private void showAll() {
@@ -405,13 +373,13 @@ public class Game {
 
 						// mine
 						cellBtnArr[x][y].setIcon(gui.getIconMine());
-						cellBtnArr[x][y].setBackground(Color.lightGray);
+						cellBtnArr[x][y].setBackground(Color.white);
 					} else {
 						if (cellContent.equals("0")) {
 							cellBtnArr[x][y].setText("");
-							cellBtnArr[x][y].setBackground(Color.lightGray);
+							cellBtnArr[x][y].setBackground(Color.white);
 						} else {
-							cellBtnArr[x][y].setBackground(Color.lightGray);
+							cellBtnArr[x][y].setBackground(Color.white);
 							cellBtnArr[x][y].setText(cellContent);
 							gui.setTextColor(cellBtnArr[x][y]);
 						}
@@ -430,14 +398,6 @@ public class Game {
 			}
 		}
 	}
-
-	// -------------------------------------------------------------------------//
-
-	// -------------------------------------------------------------------------//
-
-	// -------------------------------------------------------------------------//
-
-	// --------------------------------------------------------------------------//
 	
 	/*
 	 * 게임 클리어 여부 체크
@@ -489,6 +449,4 @@ public class Game {
 	public DBUtil getDBUtil() {
 		return util;
 	}
-
-	// ----------------------------------------------------------------------/
 }

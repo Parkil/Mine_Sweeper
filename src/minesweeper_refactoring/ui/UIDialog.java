@@ -17,14 +17,13 @@ import javax.swing.SwingConstants;
 import javax.swing.WindowConstants;
 import javax.swing.border.Border;
 import javax.swing.border.EtchedBorder;
-
-import minesweeper_refactoring.UI;
+import javax.swing.border.TitledBorder;
 
 public class UIDialog {
 	
-	private UI uiWindow;
+	private UIWindow uiWindow;
 	
-	public UIDialog(UI uiWindow) {
+	public UIDialog(UIWindow uiWindow) {
 		this.uiWindow = uiWindow;
 	}
 	
@@ -55,8 +54,6 @@ public class UIDialog {
 		return JOptionPane.showOptionDialog(uiWindow, dialogContent,title, JOptionPane.YES_NO_OPTION,
 				JOptionPane.QUESTION_MESSAGE, question, options, initValue);
 	}
-	
-	
 	
 	/** create save progress dialog by window closing
 	 * @return
@@ -229,6 +226,87 @@ public class UIDialog {
 		dialog.pack();
 		dialog.setLocationRelativeTo(uiWindow);
 		
+		return retMap;
+	}
+	
+	
+	/**최고기록을 표시하는 Dialog
+	 * 
+	 * @return 표시되는 dialog와 스코어에 따른 조작이 필요한 컴포넌트를 저장한 HashMap
+	 */
+	public HashMap<String,Object> showScoreDialog() {
+		HashMap<String,Object> retMap = new HashMap<String,Object>();
+		
+		JDialog dialog = new JDialog(uiWindow, Dialog.ModalityType.DOCUMENT_MODAL);
+		retMap.put("dialog", dialog);
+
+		JPanel bestTimes = new JPanel();
+		bestTimes.setLayout(new GridLayout(5, 1));
+		
+		for(int i=1 ; i<=5 ; i++) {
+			JLabel bestTime = new JLabel("temp");
+			retMap.put("bestTime"+i, bestTime);
+			bestTimes.add(bestTime);
+		}
+
+		TitledBorder b = BorderFactory.createTitledBorder("Best Times");
+		b.setTitleJustification(TitledBorder.LEFT);
+
+		bestTimes.setBorder(b);
+
+		JPanel statistics = new JPanel();
+
+		statistics.setLayout(new GridLayout(6, 1, 0, 10));
+
+		JLabel gPlayed = new JLabel("temp");
+		JLabel gWon = new JLabel("temp");
+		JLabel gPercentage = new JLabel("temp");
+		JLabel lWin = new JLabel("temp");
+		JLabel lLose = new JLabel("temp");
+		JLabel currentStreak = new JLabel("temp");
+		
+		retMap.put("gPlayed", gPlayed);
+		retMap.put("gWon", gWon);
+		retMap.put("gPercentage", gPercentage);
+		retMap.put("lWin", lWin);
+		retMap.put("lLose", lLose);
+		retMap.put("currentStreak", currentStreak);
+
+		statistics.add(gPlayed);
+		statistics.add(gWon);
+		statistics.add(gPercentage);
+		statistics.add(lWin);
+		statistics.add(lLose);
+		statistics.add(currentStreak);
+
+		Border loweredetched = BorderFactory.createEtchedBorder(EtchedBorder.LOWERED);
+		statistics.setBorder(loweredetched);
+
+		// --------BUTTONS----------//
+		JPanel buttons = new JPanel();
+		buttons.setLayout(new GridLayout(1, 2, 10, 0));
+
+		JButton closeBtn = new JButton("Close");
+		JButton resetBtn = new JButton("Reset");
+		
+		retMap.put("closeBtn", closeBtn);
+		retMap.put("resetBtn", resetBtn);
+
+		buttons.add(closeBtn);
+		buttons.add(resetBtn);
+
+		JPanel c = new JPanel();
+		c.setLayout(new BorderLayout(20, 20));
+		c.add(bestTimes, BorderLayout.WEST);
+		c.add(statistics, BorderLayout.CENTER);
+		c.add(buttons, BorderLayout.SOUTH);
+
+		c.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+
+		dialog.setTitle("Minesweeper Statistics - Haris Muneer");
+		dialog.add(c);
+		dialog.setLocationRelativeTo(uiWindow);
+		dialog.pack();
 		return retMap;
 	}
 }

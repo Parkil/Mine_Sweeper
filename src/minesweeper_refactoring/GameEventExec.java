@@ -7,6 +7,7 @@ import javax.swing.JDialog;
 import javax.swing.SwingWorker;
 
 import minesweeper_refactoring.ui.CellBtn;
+import minesweeper_refactoring.ui.UIWindow;
 
 /*
  * Event Listener에 전달할 객체 Lister에서 실제 지뢰찾기에서 수행되어야 하는 동작을 정의
@@ -17,11 +18,11 @@ public class GameEventExec {
 
 	private Score score;
 	
-	private UI gui;
+	private UIWindow gui;
 	
 	private Game game;
 	
-	public GameEventExec(Score score, UI gui, Game game) {
+	public GameEventExec(Score score, UIWindow gui, Game game) {
 		this.score = score;
 		this.gui = gui;
 		this.game = game;
@@ -88,7 +89,8 @@ public class GameEventExec {
 	
 	//왼쪽클릭 처리
 	public void leftClick(CellBtn button) {
-		if (!"F".equals(button.getContent())) {
+		//F(깃발표시) 또는 ""(아직 클릭되지 않음) 상태일때만 left click을 실행
+		if (!"F".equals(button.getContent()) && "".equals(button.getContent().trim())) {
 			String[] coord = button.getName().split(",");
 
 			int x = Integer.parseInt(coord[0]);
@@ -113,11 +115,11 @@ public class GameEventExec {
 				gui.setTextColor(button); 
 
 				if (surroundMineCnt == 0) {
-					button.setBackground(Color.lightGray);
+					button.setBackground(Color.white);
 					button.setText("");
 					gui.findZeroes(x, y);
 				} else {
-					button.setBackground(Color.lightGray);
+					button.setBackground(Color.white);
 				}
 			}
 		}

@@ -20,8 +20,11 @@ public class Main {
 	 * 
 	 * 사용자 UI가 들어가는 상황에서 JUnit test case를 작성할수 있는지 확인 필요
 	 * 
+	 * [해야할일]
+	 * Game에 들어있는 Swing구성요소를 UI로 이관(처리)
+	 * 전체적으로 테스트를 진행하고 예전 소스와 다르게 처리되는 부분을 수정
 	 */
 	public static void main(String[] args) {
-		Game game = new Game();
+		new Game();
 	}
 }
