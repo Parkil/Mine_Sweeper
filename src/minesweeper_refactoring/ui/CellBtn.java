@@ -6,11 +6,11 @@ public class CellBtn extends JButton {
 
 	private static final long serialVersionUID = -1594822198303286157L;
 
-	private boolean isMineBuried = false; //해당 셀에 지뢰가 묻혀있는지 여부 
+	private boolean isMineBuried = false;
 
-	private String content = ""; //해당셀의 상태
+	private String content = "";
 
-	private int surroundingMineCnt = 0; //해당셀주변의 지뢰개수
+	private int surroundingMineCnt = 0;
 
 	public boolean isMineBuried() {
 		return isMineBuried;

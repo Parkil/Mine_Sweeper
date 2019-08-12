@@ -16,18 +16,17 @@ public class EventMenu implements ActionListener {
 		this.exec = exec;
 	}
 	
-	//New Game 이벤트 수행
 	private void execNewGameMenu() {
 		if (exec.getIsGamePlaying()) {
 			int startNew = exec.windowNewGameDialog();
 			
 			switch (startNew) {
 			case JOptionPane.YES_OPTION:
-				exec.menuEventNewGame();
+				exec.execReset();
 				break;
 
 			case JOptionPane.NO_OPTION:
-				exec.menuEventRestartGame();
+				exec.execReset();
 				break;
 
 			case JOptionPane.CANCEL_OPTION:
@@ -47,7 +46,7 @@ public class EventMenu implements ActionListener {
 			case "Exit" : exec.fireWindowClosingEvent(); //Exit
 			break;
 			
-			default : exec.menuEventStatistics(); //통계화면
+			default : exec.menuEventStatistics(); //Statistics
 			break;
 		}
 	}

@@ -18,7 +18,6 @@ public class EventMouse extends MouseAdapter {
 	
 	@Override
 	public void mouseReleased(MouseEvent e) {
-		//플레이 중이 아닐때 
 		if (!exec.getIsGamePlaying()) {
 			exec.setGamePlaying();
 		}

@@ -66,16 +66,15 @@ public class UIDialog {
 		panel.add(new JLabel("Saving.... Please Wait", SwingConstants.CENTER));
 		dialog.add(panel);
 		dialog.setTitle("Saving Game...");
-		dialog.pack();
 		dialog.setLocationRelativeTo(uiWindow);
 		dialog.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		
 		return dialog;
 	}
 	
-	/**게임에서 승리했을때 표시되는 dialog를 반환
-	 * 
-	 * @return 표시되는 dialog와 스코어에 따른 조작이 필요한 컴포넌트를 저장한 HashMap
+	/**
+	 * create game won dialog
+	 * @return map contains jdialog and components
 	 */
 	public HashMap<String,Object> gameWonDialog() {
 		HashMap<String,Object> retMap = new HashMap<String,Object>();
@@ -89,10 +88,8 @@ public class UIDialog {
 		statistics.setLayout(new GridLayout(6, 1, 0, 10)); //gameLost에서는 5,1,0,10
 		
 		/*
-		 * JLabel을 생성하고 다른 Class에서 Label의 내용을 setText를 이용하여 변경하고자 할때
-		 * new JLabel() 이나 new JLabel("")로 초기화를 하면 setText에서 텍스트 변경시 변경이 되지 않음
-		 * 반드시 임시문자열로 생성을 해주어야 정상적으로 변경됨
-		 * (jdk 1.8에서 테스트)
+		 * create JLabel here and manipulate text using setText() in other class,
+		 * JLabel must initalize dummy text ex) new JLabel("temp")
 		 */
 		JLabel bestTimeAnn = new JLabel("temp");
 		JLabel time = new JLabel("temp");
@@ -118,7 +115,6 @@ public class UIDialog {
 		Border loweredetched = BorderFactory.createEtchedBorder(EtchedBorder.LOWERED);
 		statistics.setBorder(loweredetched);
 
-		// --------BUTTONS----------//
 		JPanel buttons = new JPanel();
 		buttons.setLayout(new GridLayout(1, 2, 10, 0));
 
@@ -130,8 +126,6 @@ public class UIDialog {
 		
 		buttons.add(exitBtn);
 		buttons.add(playAgainBtn);
-
-		// --------DIALOG-------------//
 
 		JPanel c = new JPanel();
 		c.setLayout(new BorderLayout(20, 20));
@@ -145,15 +139,14 @@ public class UIDialog {
 
 		dialog.setTitle("Game Won");
 		dialog.add(c);
-		dialog.pack();
 		dialog.setLocationRelativeTo(uiWindow);
 		
 		return retMap;
 	}
 	
-	/**게임에서 패배했을때 표시되는 dialog를 반환
-	 * 
-	 * @return 표시되는 dialog와 스코어에 따른 조작이 필요한 컴포넌트를 저장한 HashMap
+	/**
+	 * create game lost dialog
+	 * @return map contains jdialog and components
 	 */
 	public HashMap<String,Object> gameLostDialog() {
 		HashMap<String,Object> retMap = new HashMap<String,Object>();
@@ -166,12 +159,6 @@ public class UIDialog {
 		JPanel statistics = new JPanel();
 		statistics.setLayout(new GridLayout(5, 1, 0, 10));
 		
-		/*
-		 * JLabel을 생성하고 다른 Class에서 Label의 내용을 setText를 이용하여 변경하고자 할때
-		 * new JLabel() 이나 new JLabel("")로 초기화를 하면 setText에서 텍스트 변경시 변경이 되지 않음
-		 * 반드시 임시문자열로 생성을 해주어야 정상적으로 변경됨
-		 * (jdk 1.8에서 테스트)
-		 */
 		JLabel time = new JLabel("temp");
 		JLabel bestTime = new JLabel("temp");
 		JLabel gPlayed = new JLabel("temp");
@@ -223,16 +210,15 @@ public class UIDialog {
 
 		dialog.setTitle("Game Lost");
 		dialog.add(c);
-		dialog.pack();
 		dialog.setLocationRelativeTo(uiWindow);
 		
 		return retMap;
 	}
 	
 	
-	/**최고기록을 표시하는 Dialog
-	 * 
-	 * @return 표시되는 dialog와 스코어에 따른 조작이 필요한 컴포넌트를 저장한 HashMap
+	/**
+	 * create best score dialog
+	 * @return map contains jdialog and components
 	 */
 	public HashMap<String,Object> showScoreDialog() {
 		HashMap<String,Object> retMap = new HashMap<String,Object>();
@@ -282,7 +268,6 @@ public class UIDialog {
 		Border loweredetched = BorderFactory.createEtchedBorder(EtchedBorder.LOWERED);
 		statistics.setBorder(loweredetched);
 
-		// --------BUTTONS----------//
 		JPanel buttons = new JPanel();
 		buttons.setLayout(new GridLayout(1, 2, 10, 0));
 
@@ -306,7 +291,6 @@ public class UIDialog {
 		dialog.setTitle("Minesweeper Statistics - Haris Muneer");
 		dialog.add(c);
 		dialog.setLocationRelativeTo(uiWindow);
-		dialog.pack();
 		return retMap;
 	}
 }

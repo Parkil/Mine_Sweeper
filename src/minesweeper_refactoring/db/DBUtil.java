@@ -21,7 +21,6 @@ public class DBUtil {
 	
 	private int rows;
 	private int cols;
-//	private int totMineCnt;
 	private CellBtn[][] cellBtnArr;
 	
 	public final static String dbURL;
@@ -46,12 +45,11 @@ public class DBUtil {
 		
 		rows = ((Integer)infoMap.get("rows")).intValue();
 		cols = ((Integer)infoMap.get("cols")).intValue();
-//		totMineCnt = ((Integer)infoMap.get("totMineCnt")).intValue();
 		cellBtnArr = (CellBtn[][])infoMap.get("cellBtn");
 	}
 	
-	/** 기존에 저장되어 있는 게임이 존재하는지 체크
-	 * @return 저장된 게임이 존재하는지 여부
+	/** check save game 
+	 * @return save game exists
 	 */
 	public boolean checkSave() {
 		Connection connection = null;
@@ -69,11 +67,9 @@ public class DBUtil {
 				saveExists = true;
 			}
 
-			// cleanup resources, once after processing
 			resultSet.close();
 			statement.close();
 
-			// and then finally close connection
 			connection.close();
 
 			return saveExists;
@@ -83,7 +79,7 @@ public class DBUtil {
 		}
 	}
 	
-	/** 저장되어 있는 게임 load
+	/** load save
 	 * @return
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -95,7 +91,6 @@ public class DBUtil {
 		try {
 			connection = DriverManager.getConnection(dbURL);
 
-			// 저장된 상태반환
 			statement = connection.createStatement();
 			resultSet = statement.executeQuery("SELECT * FROM CELL");
 
@@ -112,7 +107,6 @@ public class DBUtil {
 			statement.close();
 			resultSet.close();
 
-			// 남아있는 지뢰, timer반환
 			statement = connection.createStatement();
 			resultSet = statement.executeQuery("SELECT * FROM GAME_STATE");
 
@@ -138,7 +132,7 @@ public class DBUtil {
 	}
 
 	/**
-	 * 기존에 저장되어 있던 게임을 삭제처리
+	 * delete save game
 	 */
 	public void deleteSavedGame() {
 		Connection connection = null;
@@ -147,26 +141,23 @@ public class DBUtil {
 		try {
 			connection = DriverManager.getConnection(dbURL);
 
-			// ----------EMPTY GAME_STATE TABLE------//
 			String template = "DELETE FROM GAME_STATE";
 			statement = connection.prepareStatement(template);
 			statement.executeUpdate();
 
-			// ----------EMPTY CELL TABLE------//
 			template = "DELETE FROM CELL";
 			statement = connection.prepareStatement(template);
 			statement.executeUpdate();
 
 			statement.close();
 
-			// and then finally close connection
 			connection.close();
 		} catch (SQLException sqlex) {
 			sqlex.printStackTrace();
 		}
 	}
 
-	/** 현제 저장되어 있는 게임을 삭제
+	/** save sweeper cell state
 	 * @param timer
 	 * @param mines
 	 */
@@ -206,7 +197,7 @@ public class DBUtil {
 		}
 	}
 	
-	/** 기존 게임 진행회수 및 BEST클리어 시간 반환
+	/** get score and play count
 	 * @return
 	 */
 	public boolean populate(Score score) {
@@ -214,7 +205,6 @@ public class DBUtil {
 		Statement statement = null;
 		ResultSet resultSet = null;
 
-		// 지뢰찾기 게임 진행 회수를 access db에서 반환
 		try {
 			String dbURL = DBUtil.dbURL;
 
@@ -239,8 +229,6 @@ public class DBUtil {
 			resultSet.close();
 			statement.close();
 
-			// ------------------------LOAD TIMES------------------//
-			// 지뢰찾기 클리어 시간 반환
 			statement = connection.createStatement();
 			resultSet = statement.executeQuery("SELECT * FROM TIME");
 
@@ -266,7 +254,7 @@ public class DBUtil {
 	}
 	
 	/**
-	 * 지뢰찾기 스코어 저장 
+	 * save score
 	 */
 	public void saveScore(Score score) {
 		Connection connection = null;

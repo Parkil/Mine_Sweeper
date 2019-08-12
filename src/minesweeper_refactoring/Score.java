@@ -6,9 +6,12 @@ import java.sql.Date;
 import java.util.Collections;
 import java.util.Comparator;
 
+/**
+ * @author alkain77
+ * score related variables
+ */
 public class Score {
 	ArrayList<Time> bestTimes;
-	
 
 	private int gamesPlayed;
 	private int gamesWon;
@@ -139,9 +142,6 @@ public class Score {
 		this.currentLosingStreak = currentLosingStreak;
 	}
 
-	// --------------------------------------------------//
-
-	// ---------------------------------------------------//
 	public class TimeComparator implements Comparator<Time> {
 		@Override
 		public int compare(Time a, Time b) {
@@ -153,8 +153,7 @@ public class Score {
 				return 0;
 		}
 	}
-
-	// ----------------------------------------------------------//
+	
 	public class Time {
 		Date date;
 		int time;

@@ -73,27 +73,24 @@ public class UIWindow extends JFrame {
 		JPanel gameBoard;
 		JPanel tmPanel;
 
-		// ----------------GAME BOARD---------------------//
 		// Build the "gameBoard".
 		gameBoard = new JPanel();
 		gameBoard.setLayout(new GridLayout(rows, cols, 0, 0));
 		
-		//실제 UI에 표시되는 좌표와 배열좌표를 일치시키기 위하여 x,y와 rows,cols를 역순으로 배치
+		//x,y - rows,cols invert for array location matching ui board cell location
 		for (int y = 0; y < rows; y++) {
 			for (int x = 0; x < cols; x++) {
 				cellBtnArr[x][y] = new CellBtn();
 				cellBtnArr[x][y].setName(x+ "," + y);
 				cellBtnArr[x][y].setFont(new Font("Serif", Font.BOLD, 24));
 				cellBtnArr[x][y].setBorder(BorderFactory.createLineBorder(Color.black, 1, true));
-				cellBtnArr[x][y].setFocusPainted(false); //해당 버튼에 focus가 갈때 focus표시를 하지 않도록 설정
+				cellBtnArr[x][y].setFocusPainted(false);
 				
 				gameBoard.add(cellBtnArr[x][y]);
 			}
 		}
 
 		setBtnCellStatus();
-
-		// -------------TIME AND MINE------------------------//
 
 		JPanel timePassedPanel = new JPanel();
 		timePassedPanel.setLayout(new BorderLayout(10, 0));
@@ -146,10 +143,7 @@ public class UIWindow extends JFrame {
 		tmPanel.add(timePassedPanel, BorderLayout.WEST);
 		tmPanel.add(minesPanel, BorderLayout.EAST);
 		tmPanel.setOpaque(false);
-
-		// --------------------------------------------//
-
-		// ------------------Menu--------------------------//
+		
 		menuBar = new JMenuBar();
 
 		gameMenu = new JMenu("Game");
@@ -167,7 +161,6 @@ public class UIWindow extends JFrame {
 		gameMenu.add(exit);
 
 		menuBar.add(gameMenu);
-		// ----------------------------------------------------//
 
 		JPanel p = new JPanel();
 		p.setLayout(new BorderLayout(0, 10));
@@ -195,10 +188,8 @@ public class UIWindow extends JFrame {
 	}
 	
 	
-	//각 버튼에 대한 상태(지뢰매설 여부, 셀주변 지뢰개수) 설정 
 	private void setBtnCellStatus() {
 		
-		//1.지뢰를 랜덤으로 설정
 		int x, y;
 		int currentMines = 0;
 		
@@ -206,7 +197,6 @@ public class UIWindow extends JFrame {
 			x = (int) Math.floor(Math.random() * cols);
 			y = (int) Math.floor(Math.random() * rows);
 			
-			//해당셀에 지뢰가 매설되어 있지 않을경우 지뢰를 매설하고 지뢰주변셀의 지뢰개수를 1씩 증가시킴
 			if (!cellBtnArr[x][y].isMineBuried()) {
 				cellBtnArr[x][y].setMineBuried(true);
 				incSurroundMineCnt(x, y);
@@ -215,7 +205,6 @@ public class UIWindow extends JFrame {
 		}
 	}
 	
-	//해당 좌표 주변셀의 지뢰개수 증가
 	private void incSurroundMineCnt(int xCo, int yCo) {
 		for (int x = makeValidCoordinateX(xCo - 1); x <= makeValidCoordinateX(xCo + 1); x++) {
 			for (int y = makeValidCoordinateY(yCo - 1); y <= makeValidCoordinateY(yCo + 1); y++) {
@@ -227,7 +216,6 @@ public class UIWindow extends JFrame {
 		}
 	}
 	
-	//해당 좌표를 중심으로 주변에 지뢰가없는 셀을 전부 검색
 	public void findZeroes(int xCo, int yCo) {
 		int surroundMineCnt;
 
@@ -236,7 +224,6 @@ public class UIWindow extends JFrame {
 				if ("".equals(cellBtnArr[x][y].getContent())) {
 					CellBtn btn = cellBtnArr[x][y];
 					
-					//해당셀에 주변지뢰개수를 반환
 					surroundMineCnt = btn.getSurroundingMineCnt();
 					btn.setContent(Integer.toString(surroundMineCnt));
 					
@@ -244,11 +231,11 @@ public class UIWindow extends JFrame {
 						btn.setIcon(null);
 					}
 					
-					if (surroundMineCnt == 0) { //주변에 지뢰가 존재하지 않을경우
+					if (surroundMineCnt == 0) {
 						btn.setBackground(Color.white);
 						btn.setText("");
 						findZeroes(x, y);
-					} else { //주변에 지뢰가 존재할 경우
+					} else {
 						btn.setBackground(Color.white);
 						btn.setText(Integer.toString(surroundMineCnt));
 						setTextColor(btn);
@@ -258,7 +245,6 @@ public class UIWindow extends JFrame {
 		}
 	}
 	
-	//주어진 x좌표가 grid에서 유효한 좌표인지 확인
 	private int makeValidCoordinateX(int i) {
 		if (i < 0)
 			i = 0;
@@ -268,7 +254,6 @@ public class UIWindow extends JFrame {
 		return i;
 	}
 	
-	//주어진 y좌표가 grid에서 유효한 좌표인지 확인
 	private int makeValidCoordinateY(int i) {
 		if (i < 0)
 			i = 0;
@@ -278,7 +263,6 @@ public class UIWindow extends JFrame {
 		return i;
 	}
 	
-	//버튼의 상태를 전부 초기화
 	public void resetBtn() {
 		for (int x = 0; x < cols; x++) {
 			for (int y = 0; y < rows; y++) {
@@ -286,27 +270,7 @@ public class UIWindow extends JFrame {
 			}
 		}
 	}
-	// ------------------------------------------------------------------//
-
-	// ---------------------HELPER FUNCTIONS---------------------------//
-
-	// 지뢰 주변의 숫자생성
-	// 해당 x,y좌표의 근처(자기 주변 8칸)에 지뢰가 있으면 지뢰개수를 현재 칸에 표시
-	/*
-	 * 해당코드에서는 x,y좌표가 유효한지 체크를 했지만, 이게 필요할지는 의문 -> 지정된 범위를 넘어가는곳에 지뢰가 존재할리 없기 때문
-	 * 
-	 * 현재좌표 x,y의 상하좌우 4칸 + 각방향 대각선 4칸
-	 */
-	// Calculates the number of surrounding mines ("neighbours")
-
 	
-	
-
-	// -----------------------------------------------------------------//
-
-	// -----------------------Related to Timer------------------------//
-
-	// Starts the timer
 	public void startTimer() {
 		stopTimer = false;
 
@@ -352,14 +316,10 @@ public class UIWindow extends JFrame {
 		timePassedLabel.setText("  " + timePassed + "  ");
 	}
 
-	// -----------------------------------------------------------//
-
 	public void initGame() {
 		hideAll();
 		enableAll();
 	}
-
-	// ------------------HELPER FUNCTIONS-----------------------//
 
 	// Makes buttons clickable
 	public void enableAll() {
@@ -389,7 +349,6 @@ public class UIWindow extends JFrame {
 			}
 		}
 	}
-	// ---------------SET LISTENERS--------------------------//
 	
 	public void setButtonListeners(GameEventExec exec) {
 		addWindowListener(new EventWindow(exec));
@@ -409,8 +368,6 @@ public class UIWindow extends JFrame {
 		exit.setAccelerator(KeyStroke.getKeyStroke('Q', Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
 		statistics.setAccelerator(KeyStroke.getKeyStroke('S', Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
 	}
-
-	// -----------------GETTERS AND SETTERS--------------------//
 
 	public CellBtn[][] getCellBtnArr() {
 		return cellBtnArr;
@@ -499,9 +456,6 @@ public class UIWindow extends JFrame {
 		return uiDialog;
 	}
 	
-	/** 버튼 셀의 주변지뢰 개수에 따라 숫자의 색을 다르게 설정
-	 * @param b JButton
-	 */
 	public void setTextColor(JButton b) {
 		if (b.getText().equals("1"))
 			b.setForeground(Color.blue);
@@ -521,9 +475,6 @@ public class UIWindow extends JFrame {
 			b.setForeground(new Color(153, 0, 76));
 	}
 	
-	/*
-	 * 각 버튼 상태에 따른 아이콘 및 배경색 설정
-	 */
 	public void setButtonImages() {
 		for (int y = 0; y < rows; y++) {
 			for (int x = 0; x < cols; x++) {

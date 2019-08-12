@@ -30,7 +30,7 @@ public class EventWindow extends WindowAdapter {
 					break;
 	
 				case JOptionPane.CANCEL_OPTION:
-					return; //cancel 선택시 System.exit(0)가 실행되지 않도록 처리
+					return;
 			}
 		}
 		
